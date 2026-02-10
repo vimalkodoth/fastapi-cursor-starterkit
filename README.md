@@ -120,14 +120,10 @@ Development setup:
 cd backend
 pip install -r requirements-dev.txt
 pre-commit install
+pre-commit install --hook-type pre-push
 ```
 
-To use the repo’s pre-push hook (warnings for uncommitted changes, optional test run), from the repo root:
-
-```bash
-cp scripts/git-hooks/pre-push .git/hooks/pre-push
-chmod +x .git/hooks/pre-push
-```
+Both hooks (commit: black, isort, flake8; push: uncommitted-changes warning, optional tests) are managed by pre-commit; no manual copy needed.
 
 Details: [PEP8_STYLE_GUIDE.md](./PEP8_STYLE_GUIDE.md).
 

@@ -20,3 +20,11 @@ repos:
       - id: flake8
         files: ^backend/.*\.py$
         types: [python]
+
+  - repo: local
+    hooks:
+      - id: pre-push
+        name: pre-push
+        entry: bash scripts/git-hooks/pre-push
+        language: system
+        stages: [pre-push]
