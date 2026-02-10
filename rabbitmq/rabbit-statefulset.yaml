@@ -28,7 +28,7 @@ spec:
           mountPath: /etc/rabbitmq/
       containers:
       - name: rabbitmq
-        image: katanaml/rabbitmq-service:latest
+        image: rabbitmq-service:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 4369

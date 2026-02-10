@@ -1,0 +1,40 @@
+name: Code Quality Checks
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        cd backend
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+    
+    - name: Run Black (format check)
+      run: |
+        cd backend
+        black --check .
+    
+    - name: Run isort (import check)
+      run: |
+        cd backend
+        isort --check .
+    
+    - name: Run flake8 (linting)
+      run: |
+        cd backend
+        flake8 .

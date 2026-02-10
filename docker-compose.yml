@@ -1,8 +1,6 @@
-version: '3.9'
-
 services:
   rabbitmq:
-    image: katanaml/rabbitmq-service
+    image: rabbitmq-service
     build:
       context: ./rabbitmq
       dockerfile: Dockerfile
@@ -11,207 +9,158 @@ services:
       - 5672:5672
       - 15672:15672
     volumes:
-      - ./backend-rabbitmq/etc/:/etc/backend/
-      - ./backend-rabbitmq/data/:/var/lib/backend/
-      - ./backend-rabbitmq/logs/:/var/log/backend/
+      - rabbitmq-data:/var/lib/rabbitmq
     environment:
       - RABBITMQ_DEFAULT_USER=guest
       - RABBITMQ_DEFAULT_PASS=welcome1
       - RABBITMQ_NODENAME=rabbitnode@localhost
-      - RABBITMQ_USER=skipper
+      - RABBITMQ_USER=guest
       - RABBITMQ_PASSWORD=welcome1
     networks:
       - network1
     restart: always
 
   logger:
-    image: katanaml/skipper-logger
+    image: logger-service
     build:
       context: ./logger
       dockerfile: Dockerfile
-    container_name: skipper-logger
+    container_name: logger-service
     ports:
       - 5001:5001
     networks:
       - network1
 
-  workflow:
-    image: katanaml/skipper-workflow
-    build:
-      context: ./workflow
-      dockerfile: Dockerfile
-    container_name: skipper-workflow
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
     ports:
-      - 5000:5000
+      - 5432:5432
     environment:
-      - LOGGER_URL=http://logger:5001/api/v1/skipper/logger/log_workflow
+      - POSTGRES_USER=fastapi
+      - POSTGRES_PASSWORD=fastapi
+      - POSTGRES_DB=fastapi_db
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
     networks:
       - network1
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fastapi -d fastapi_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  # Redis for Celery broker and result backend
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - 6379:6379
+    volumes:
+      - redis-data:/data
+    networks:
+      - network1
+    restart: always
+
+  # FastAPI Application
   api:
-    image: katanaml/skipper-api
+    image: fastapi-starter-api
     build:
-      context: ./api
+      context: ./backend
       dockerfile: Dockerfile
-    container_name: skipper-api
-    command: uvicorn endpoint:app --port=8000 --host 0.0.0.0
+    container_name: fastapi-api
+    command: uvicorn main:app --port=8000 --host 0.0.0.0 --reload
     ports:
       - 8000:8000
     environment:
-      - WORKFLOW_URL=http://workflow:5000/api/v1/skipper/workflow/
-      - LOGGER_PRODUCER_URL=http://logger:5001/api/v1/skipper/logger/log_producer
-      - RABBITMQ_BROKER=pyamqp://skipper:welcome1@rabbitmq//
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - LOGGER_PRODUCER_URL=http://logger:5001/api/v1/logger/log_producer
       - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
-      - RABBITMQ_USER=skipper
+      - RABBITMQ_USER=guest
       - RABBITMQ_PASSWORD=welcome1
-      - BOSTON_ENABLED=y
-      - MOBILENET_ENABLED=y
+      - DATA_QUEUE_NAME=data_queue
+      - DATABASE_URL=postgresql://fastapi:fastapi@postgres:5432/fastapi_db
+      # Async DB URL (optional; defaults to DATABASE_URL with asyncpg driver)
+      - ASYNC_DATABASE_URL=postgresql+asyncpg://fastapi:fastapi@postgres:5432/fastapi_db
+      - PYTHONPATH=/app
     networks:
       - network1
     depends_on:
-      - rabbitmq
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
+      logger:
+        condition: service_started
+      data-service:
+        condition: service_started
     restart: on-failure
 
+  # Celery Worker for async tasks
   api-celery:
-    image: katanaml/skipper-api-celery
+    image: fastapi-starter-api
     build:
-      context: ./api
+      context: ./backend
       dockerfile: Dockerfile
-    container_name: skipper-api-celery
-    command: celery -A api.worker worker --loglevel=INFO
+    container_name: fastapi-celery-worker
+    command: celery -A app.infrastructure.celery worker --loglevel=INFO
     environment:
-      - WORKFLOW_URL=http://workflow:5000/api/v1/skipper/workflow/
-      - LOGGER_PRODUCER_URL=http://logger:5001/api/v1/skipper/logger/log_producer
-      - RABBITMQ_BROKER=pyamqp://skipper:welcome1@rabbitmq//
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - LOGGER_PRODUCER_URL=http://logger:5001/api/v1/logger/log_producer
       - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
-      - RABBITMQ_USER=skipper
+      - RABBITMQ_USER=guest
       - RABBITMQ_PASSWORD=welcome1
+      - DATA_QUEUE_NAME=data_queue
+      - DATABASE_URL=postgresql://fastapi:fastapi@postgres:5432/fastapi_db
+      - PYTHONPATH=/app
     networks:
       - network1
     depends_on:
-      - api
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
+      logger:
+        condition: service_started
+      api:
+        condition: service_started
+      data-service:
+        condition: service_started
     restart: on-failure
 
-  # Sample set of services, you should replace with your own services
+  # Data Service - listens to RabbitMQ queue
   data-service:
-    image: katanaml/data-service
+    image: data-service
     build:
       context: ./services/dataservice
       dockerfile: Dockerfile
     container_name: data-service
-    volumes:
-      - ./services/models/:/usr/src/dataservice/models:rw
     environment:
-      - LOGGER_RECEIVER_URL=http://logger:5001/api/v1/skipper/logger/log_receiver
+      - PYTHONUNBUFFERED=1
+      - LOGGER_RECEIVER_URL=http://logger:5001/api/v1/logger/log_receiver
       - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
-      - RABBITMQ_USER=skipper
+      - RABBITMQ_USER=guest
       - RABBITMQ_PASSWORD=welcome1
-      - QUEUE_NAME=skipper_data
+      - QUEUE_NAME=data_queue
       - SERVICE_NAME=data
-      - STATS_FILE=/usr/src/dataservice/models/train_stats.csv
     networks:
       - network1
     depends_on:
       - rabbitmq
+      - logger
     restart: on-failure
 
-  training-service:
-    image: katanaml/training-service
-    build:
-      context: ./services/trainingservice
-      dockerfile: Dockerfile
-    container_name: training-service
-    volumes:
-      - ./services/models/:/usr/src/trainingservice/models:rw
-    environment:
-      - LOGGER_PRODUCER_URL=http://logger:5001/api/v1/skipper/logger/log_producer
-      - LOGGER_RECEIVER_URL=http://logger:5001/api/v1/skipper/logger/log_receiver
-      - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_PORT=5672
-      - RABBITMQ_USER=skipper
-      - RABBITMQ_PASSWORD=welcome1
-      - QUEUE_NAME=skipper_training
-      - SERVICE_NAME=training
-      - QUEUE_NAME_DATA=skipper_data
-      - QUEUE_NAME_STORAGE=skipper_storage
-      - MODELS_FOLDER=/usr/src/trainingservice/models/model_boston_
-      - STATS_FILE=/usr/src/trainingservice/models/train_stats.csv
-    networks:
-      - network1
-    depends_on:
-      - rabbitmq
-    restart: on-failure
-
-  serving-service:
-    image: katanaml/serving-service
-    build:
-      context: ./services/servingservice
-      dockerfile: Dockerfile
-    container_name: serving-service
-    volumes:
-      - ./services/models/:/usr/src/servingservice/models:rw
-    environment:
-      - LOGGER_RECEIVER_URL=http://logger:5001/api/v1/skipper/logger/log_receiver
-      - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_PORT=5672
-      - RABBITMQ_USER=skipper
-      - RABBITMQ_PASSWORD=welcome1
-      - QUEUE_NAME=skipper_serving
-      - SERVICE_NAME=serving
-      - MODELS_FOLDER=/usr/src/servingservice/models/serving/
-    networks:
-      - network1
-    depends_on:
-      - rabbitmq
-    restart: on-failure
-
-  storage-service:
-    image: katanaml/storage-service
-    build:
-      context: ./services/servingservice/storage
-      dockerfile: Dockerfile
-    container_name: storage-service
-    volumes:
-      - ./services/models/serving/:/usr/src/servingservice/storage/models/serving:rw
-    environment:
-      - LOGGER_RECEIVER_URL=http://logger:5001/api/v1/skipper/logger/log_receiver
-      - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_PORT=5672
-      - RABBITMQ_USER=skipper
-      - RABBITMQ_PASSWORD=welcome1
-      - QUEUE_NAME=skipper_storage
-      - SERVICE_NAME=serving
-      - MODELS_FOLDER=/usr/src/servingservice/storage/models/serving/
-    networks:
-      - network1
-    depends_on:
-      - rabbitmq
-    restart: on-failure
-
-  mobilenet-service:
-    image: katanaml/mobilenet-service
-    build:
-      context: ./services/mobilenetservice
-      dockerfile: Dockerfile
-    container_name: mobilenet-service
-    environment:
-      - LOGGER_PRODUCER_URL=http://logger:5001/api/v1/skipper/logger/log_producer
-      - LOGGER_RECEIVER_URL=http://logger:5001/api/v1/skipper/logger/log_receiver
-      - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_PORT=5672
-      - RABBITMQ_USER=skipper
-      - RABBITMQ_PASSWORD=welcome1
-      - QUEUE_NAME=skipper_mobilenet
-      - SERVICE_NAME=mobilenet
-    networks:
-      - network1
-    depends_on:
-      - rabbitmq
-    restart: on-failure
-  # Sample set of services, you should replace with your own services
 
   nginx:
     image: nginx:latest
@@ -224,6 +173,11 @@ services:
     depends_on:
       - api
 
+volumes:
+  redis-data:
+  postgres-data:
+  rabbitmq-data:
+
 networks:
   network1:
-    name: katana-network
+    name: fastapi-network

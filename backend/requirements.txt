@@ -1,0 +1,20 @@
+# API framework (Pydantic v2 compatible)
+fastapi>=0.115.0,<1
+uvicorn>=0.30.0
+pydantic>=2.7.0,<3
+
+# SQLModel ORM 0.0.32+ (async support, SQLAlchemy 2.x + Pydantic 2)
+sqlmodel>=0.0.32
+
+# DB drivers: sync (Celery/init) and async (FastAPI)
+psycopg2-binary>=2.9.9
+asyncpg>=0.29.0
+
+# Celery (kombu installed as celery dependency; 4.6.x for celery 4.x)
+celery==4.4.7
+redis>=4.0.0
+
+# HTTP and migrations
+requests>=2.25.1
+alembic>=1.13.1
+importlib-metadata>=4.8.3

@@ -1,0 +1,15 @@
+# Development dependencies for code quality
+# Install with: pip install -r requirements-dev.txt
+
+# Code formatting
+black==23.12.1
+isort==5.13.2
+
+# Linting
+flake8==7.0.0
+
+# Type checking
+mypy==1.8.0
+
+# Pre-commit hooks
+pre-commit==3.6.0

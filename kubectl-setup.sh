@@ -22,98 +22,56 @@ kubectl get -n rabbits svc
 
 kubectl get -n rabbits pvc
 
-# Skipper engine namespace
+# FastAPI Starter namespace
 
 {
-  kubectl create ns katana-skipper
+  kubectl create ns fastapi-starter
 } || {
-  echo 'katana-skipper namespace is already defined'
+  echo 'fastapi-starter namespace is already defined'
 }
 
-# Skipper Logger
+# Logger Service
 
-kubectl apply -n katana-skipper -f logger/logger-pod.yaml
+kubectl apply -n fastapi-starter -f logger/logger-pod.yaml
 
-kubectl rollout status -n katana-skipper deploy/skipper-logger
+kubectl rollout status -n fastapi-starter deploy/logger-service
 
-kubectl get -n katana-skipper pods
+kubectl get -n fastapi-starter pods
 
-kubectl get -n katana-skipper svc skipper-logger
+kubectl get -n fastapi-starter svc logger-service
 
-kubectl get -n katana-skipper deployments
+kubectl get -n fastapi-starter deployments
 
-# Skipper workflow
+# FastAPI Application
 
-kubectl apply -n katana-skipper -f workflow/workflow-pod.yaml
+kubectl apply -n fastapi-starter -f backend/backend-pod.yaml
 
-kubectl rollout status -n katana-skipper deploy/skipper-workflow
+kubectl rollout status -n fastapi-starter deploy/fastapi-api
 
-kubectl get -n katana-skipper pods
+kubectl get -n fastapi-starter pods
 
-kubectl get -n katana-skipper svc skipper-workflow
+kubectl get -n fastapi-starter svc fastapi-api
 
-kubectl get -n katana-skipper deployments
+kubectl get -n fastapi-starter deployments
 
-# Skipper API
+# FastAPI Celery Worker
 
-kubectl apply -n katana-skipper -f api/api-pod.yaml
+kubectl apply -n fastapi-starter -f backend/backend-celery-pod.yaml
 
-kubectl rollout status -n katana-skipper deploy/skipper-api
+kubectl rollout status -n fastapi-starter deploy/fastapi-api-celery
 
-kubectl get -n katana-skipper pods
+kubectl get -n fastapi-starter pods
 
-kubectl get -n katana-skipper svc skipper-api
+kubectl get -n fastapi-starter deployments
 
-kubectl get -n katana-skipper deployments
+# FastAPI Ingress
 
-# Skipper API Celery
+kubectl apply -n fastapi-starter -f backend/backend-ingress.yaml
 
-kubectl apply -n katana-skipper -f api/api-celery-pod.yaml
+# Data Service
 
-kubectl rollout status -n katana-skipper deploy/skipper-api-celery
-
-kubectl get -n katana-skipper pods
-
-kubectl get -n katana-skipper deployments
-
-# Skipper API Ingress
-
-kubectl apply -n katana-skipper -f api/api-ingress.yaml
-
-# Training service and Data processing sidecar running in single Pod
-
-kubectl apply -f services/trainingservice/trainingservice-pv.yaml
-
-kubectl apply -n katana-skipper -f services/trainingservice/trainingservice-pvc.yaml
-
-kubectl apply -n katana-skipper -f services/trainingservice/trainingservice-pod.yaml
-
-kubectl rollout status -n katana-skipper deploy/training-service
-
-kubectl get -n katana-skipper pods
-
-kubectl get -n katana-skipper deployments
-
-# Serving service and Storage sidecar running in single Pod
-
-kubectl apply -f services/servingservice/servingservice-pv.yaml
-
-kubectl apply -n katana-skipper -f services/servingservice/servingservice-pvc.yaml
-
-kubectl apply -n katana-skipper -f services/servingservice/servingservice-pod.yaml
-
-kubectl rollout status -n katana-skipper deploy/serving-service
-
-kubectl get -n katana-skipper pods
-
-kubectl get -n katana-skipper deployments
-
-# MobileNet service
-
-kubectl apply -n katana-skipper -f services/mobilenetservice/mobilenetservice-pod.yaml
-
-kubectl rollout status -n katana-skipper deploy/mobilenet-service
-
-kubectl get -n katana-skipper pods
-
-kubectl get -n katana-skipper deployments
+# Note: Add data service deployment here when Kubernetes YAML is created
+# kubectl apply -n fastapi-starter -f services/dataservice/dataservice-pod.yaml
+# kubectl rollout status -n fastapi-starter deploy/data-service
+# kubectl get -n fastapi-starter pods
+# kubectl get -n fastapi-starter deployments

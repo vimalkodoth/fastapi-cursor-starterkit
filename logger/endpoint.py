@@ -12,4 +12,4 @@ app.add_middleware(
     allow_credentials=True,
 )
 
-app.include_router(router_logger, prefix='/api/v1/skipper/logger')
+app.include_router(router_logger, prefix='/api/v1/logger')

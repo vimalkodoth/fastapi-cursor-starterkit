@@ -1,12 +1,16 @@
-# Katana ML Skipper Data Service
+# FastAPI Starter Kit - Data Service
 
-## Author
+Data processing microservice that handles data transformation via RabbitMQ. It listens to the `data_queue` and processes incoming data requests.
 
-[Katana ML](https://katanaml.io), [Andrej Baranovskij](https://github.com/abaranovskis-redsamurai)
+**Features:**
+- Listens to RabbitMQ queue for data processing requests
+- Supports multiple data types (string, number, list, dict)
+- Simple data transformation based on description hints
+- Returns processed data via RabbitMQ RPC pattern
 
 ## Instructions
 
-To run all services, check instructions in main [README](https://github.com/katanaml/katana-skipper/blob/master/README.md)
+To run all services, check instructions in main [README](../../README.md)
 
 #### Run the service without Docker
 
@@ -27,27 +31,68 @@ python main.py
 1. Build container
 
 ```
-docker build --tag katanaml/data-service .
+docker build --tag data-service .
 ```
 
 2. Run container
 
 ```
-docker run -it -d --name data-service katanaml/data-service:latest
+docker run -it -d --name data-service \
+  -e RABBITMQ_HOST=rabbitmq \
+  -e RABBITMQ_PORT=5672 \
+  -e RABBITMQ_USER=guest \
+  -e RABBITMQ_PASSWORD=welcome1 \
+  -e QUEUE_NAME=data_queue \
+  -e SERVICE_NAME=data \
+  data-service:latest
 ```
+
+## Data Processing
+
+The service processes different data types based on the `description` field:
+
+**String Processing:**
+- `"uppercase"` - Converts to uppercase
+- `"reverse"` - Reverses the string
+- Default - Adds "Processed: " prefix
+
+**Number Processing:**
+- `"square"` - Squares the number
+- `"double"` - Doubles the number
+- Default - Returns as-is
+
+**List Processing:**
+- `"reverse"` - Reverses the list
+- `"sort"` - Sorts the list
+- Default - Returns with metadata (count, items)
+
+**Dictionary Processing:**
+- Adds metadata (processed flag, keys count)
+
+## Environment Variables
+
+- `RABBITMQ_HOST` - RabbitMQ host (default: `rabbitmq`)
+- `RABBITMQ_PORT` - RabbitMQ port (default: `5672`)
+- `RABBITMQ_USER` - RabbitMQ username (default: `guest`)
+- `RABBITMQ_PASSWORD` - RabbitMQ password (default: `welcome1`)
+- `QUEUE_NAME` - Queue name to listen to (default: `data_queue`)
+- `SERVICE_NAME` - Service name (default: `data`)
+- `LOGGER_RECEIVER_URL` - Logger service URL for event tracking
 
 ## Structure
 
 ```
 .
-├── app 
-│   └── data_service.py
-├── main.py
+├── app/
+│   ├── __init__.py
+│   └── data_service.py    # Data processing logic
+├── main.py                 # Service entry point
+├── rabbitmq_client.py      # RabbitMQ EventReceiver (kombu)
 ├── Dockerfile
-├── README.md
+├── README.MD
 └── requirements.txt
 ```
 
 ## License
 
-Licensed under the Apache License, Version 2.0. Copyright 2020-2021 Katana ML, Andrej Baranovskij. [Copy of the license](https://github.com/katanaml/katana-skipper/blob/master/LICENSE).
+Licensed under the Apache License, Version 2.0.

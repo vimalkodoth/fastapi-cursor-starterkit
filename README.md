@@ -1,164 +1,172 @@
-# Katana ML Skipper
-[![PyPI - Python](https://img.shields.io/badge/python-v3.7+-blue.svg)](https://github.com/katanaml/katana-skipper)
-[![GitHub Stars](https://img.shields.io/github/stars/katanaml/katana-skipper.svg)](https://github.com/katanaml/katana-skipper/stargazers)
-[![GitHub Issues](https://img.shields.io/github/issues/katanaml/katana-skipper.svg)](https://github.com/katanaml/katana-skipper/issues)
-[![Current Version](https://img.shields.io/badge/version-1.1.0-green.svg)](https://github.com/katanaml/katana-skipper)
+# FastAPI Starter Kit
 
-This is a simple and flexible ML workflow engine. It helps to orchestrate events across a set of microservices and create executable flow to handle requests. Engine is designed to be configurable with any microservices. Enjoy!
+**Production-ready, AI-native backend template for engineering teams.** Start from a clean base—add features and services with Cursor or other AI tools while keeping one standard: layered architecture, observability, and quality checks built in.
 
-![Skipper](https://github.com/katanaml/katana-skipper/blob/master/skipper.png)
+---
 
-Engine and Communication parts are generic and can be reused. A group of ML services is provided for sample purposes. You should replace a group of services with your own. The current group of ML services works with Boston Housing data. Data service is fetching Boston Housing data and converts it to the format suitable for TensorFlow model training. Training service builds TensorFlow model. Serving service is scaled to 2 instances and it serves prediction requests.
+## Why this backend template?
 
-One of the services, *mobilenetservice*, shows how to use JavaScript based microservice with Skipper. This allows to use containers with various programming languages - Python, JavaScript, Java, etc. You can run ML services with Python frameworks, Node.js or any other choice.
+- **Built for AI-assisted development** — Cursor rules, shared dependencies, and consistent patterns so agents and humans ship the same way. No “AI wrote it, we’ll fix it later.”
+- **Production-minded from day one** — Async/sync split, DLQ, idempotency, metrics, and migrations. Scale and operate without rewrites.
+- **Backend only, no frontend** — One surface to maintain: a REST API. Consume from web, mobile, or other services. Add a UI when you’re ready.
+- **Extend, don’t fight** — Clear places for new routes, services, repos, and tasks. Docs and rules tell the team (and AI) where everything goes.
 
-## Author
+---
 
-[Katana ML](https://katanaml.io), [Andrej Baranovskij](https://github.com/abaranovskis-redsamurai)
+## Features
 
-## Instructions
+| Area | What you get |
+|------|----------------|
+| **API** | FastAPI, Pydantic, async DB (SQLModel + PostgreSQL), REST + OpenAPI (Swagger / ReDoc) |
+| **Workloads** | Sync RPC (RabbitMQ) and async jobs (Celery + Redis); non-blocking event loop |
+| **Data** | PostgreSQL, Alembic migrations, connection pooling (sync + async) |
+| **Messaging** | RabbitMQ (RPC + DLQ), optional idempotency (Redis), observability metrics |
+| **Quality** | PEP 8, Black, isort, flake8, mypy, pre-commit; shared deps and response schemas |
+| **AI-native** | Cursor rules and commands; patterns aligned so agents follow your standards |
+| **Deploy** | Docker Compose for local dev; Kubernetes-ready configs |
 
-### Start/Stop
+---
 
-#### Docker Compose
+## Quick start
 
-Start:
+**Prerequisites:** Docker and Docker Compose; Python 3.9+ for local backend work.
 
-```
-docker-compose up --build -d
-```
-
-This will start Skipper services and RabbitMQ.
-
-Stop:
-
-```
-docker-compose down
-```
-
-Web API FastAPI endpoint:
-
-```
-http://127.0.0.1:8080/api/v1/skipper/tasks/docs
+```bash
+# Clone and start
+git clone <your-repo-url>
+cd katana-skipper
+docker compose up -d
 ```
 
-#### Kubernetes
+| Service | URL |
+|--------|-----|
+| **API** | http://localhost:8000 |
+| **API docs (Swagger)** | http://localhost:8000/api/v1/docs |
+| **API docs (ReDoc)** | http://localhost:8000/api/v1/redoc |
+| **Metrics** | http://localhost:8000/api/v1/metrics |
+| **Gateway (Nginx)** | http://localhost:8080 |
+| **RabbitMQ Management** | http://localhost:15672 (guest / welcome1) |
+| **Logger** | http://localhost:5001 |
 
-NGINX Ingress Controller:
+```bash
+# Logs
+docker compose logs -f
 
-If you are using local Kubernetes setup, install [NGINX Ingress Controller](https://kubernetes.github.io/ingress-nginx/deploy/)
-
-Build Docker images:
-
-```
-docker-compose -f docker-compose-kubernetes.yml build
-```
-
-Setup Kubernetes services:
-
-```
-./kubectl-setup.sh
-```
-
-Skipper API endpoint published through NGINX Ingress (you can setup your own host in /etc/hosts):
-
-```
-http://kubernetes.docker.internal/api/v1/skipper/tasks/docs
+# Stop
+docker compose down
 ```
 
-Check NGINX Ingress Controller pod name:
+---
+
+## AI-native: built for Cursor and AI engineering teams
+
+This backend repo is set up so **AI tools and humans share one playbook.** Use it as the base for feature work with Cursor (or similar) and keep behavior consistent.
+
+- **`.cursor/rules/`** — Always-on context: API-only, layout (endpoints → services → repos), commands, and patterns (DLQ, idempotency, fastapi_db). FastAPI/Python practices are adapted from [awesome-cursorrules](https://github.com/PatrickJS/awesome-cursorrules). Commit rules so the whole team (and every agent session) sees the same standards.
+- **`.cursor/commands/`** — Shortcuts like `/lint` (format + lint) and `/check` (verify only). Run them after backend edits so the agent doesn’t skip quality.
+- **Workflow** — After changing backend code, run format and lint (or `/lint`). For larger features, use Plan Mode so the agent plans before coding and stays within the structure in the rules.
+
+**What to tell the team**
+
+1. Open the project in Cursor; rules and commands load from the repo. No extra setup.
+2. After editing backend code, run `/lint` (or `make format` then `make lint`).
+3. For bigger changes, use Plan Mode (e.g. Shift+Tab in the agent input).
+4. If the agent keeps making the same mistake, add or tweak a rule in `.cursor/rules/` and commit it.
+
+Ref: [Cursor – Best practices for coding with agents](https://cursor.com/blog/agent-best-practices).
+
+---
+
+## Project structure
 
 ```
-kubectl get pods -n ingress-nginx
+.
+├── backend/                 # FastAPI app
+│   ├── app/
+│   │   ├── api/v1/          # Controllers + shared deps (deps.py)
+│   │   ├── core/            # Config, DB, dependencies, metrics, idempotency
+│   │   ├── services/        # Business logic
+│   │   ├── repositories/    # Data access
+│   │   ├── models/          # DB + Pydantic schemas
+│   │   ├── tasks/           # Celery tasks
+│   │   └── infrastructure/  # RabbitMQ, Celery
+│   └── main.py
+├── services/dataservice/    # Example microservice (RabbitMQ consumer)
+├── logger/                  # Event / observability service
+├── docs/                    # ARCHITECTURE, flows, sequence diagrams
+├── docker-compose.yml
+└── .cursor/                 # Rules + commands for AI-assisted dev
 ```
 
-Sample response, copy the name of 'Running' pod:
+New API routes → `backend/app/api/v1/endpoints/`. New logic → `services/` or `repositories/`. New DB models → `models/` + Alembic migration. See `.cursor/rules/project.md` for the full “where to add code” guide.
 
-```
-NAME                                       READY   STATUS      RESTARTS   AGE
-ingress-nginx-admission-create-dhtcm       0/1     Completed   0          14m
-ingress-nginx-admission-patch-x8zvw        0/1     Completed   0          14m
-ingress-nginx-controller-fd7bb8d66-tnb9t   1/1     Running     0          14m
-```
+---
 
-NGINX Ingress Controller logs:
+## Code quality
 
-```
-kubectl logs -n ingress-nginx -f <POD NAME>
-```
+- **Tools:** Black, isort, flake8, mypy; pre-commit hooks.
+- **Scope:** Backend Python only (`backend/`).
 
-Skipper API logs:
-
-```
-kubectl logs -n katana-skipper -f -l app=skipper-api
+```bash
+# From repo root
+make format    # black + isort
+make lint      # flake8 + mypy
+make check     # verify only (no edits)
 ```
 
-Remove Kubernetes services:
+Development setup:
 
-```
-./kubectl-remove.sh
-```
-
-### Components
-
-* **[api](https://github.com/katanaml/katana-skipper/tree/master/api)** - Web API implementation
-* **[workflow](https://github.com/katanaml/katana-skipper/tree/master/workflow)** - workflow logic
-* **[services](https://github.com/katanaml/katana-skipper/tree/master/services)** - a set of sample microservices, you should replace this with your own services. Update references in docker-compose.yml
-* **[rabbitmq](https://github.com/katanaml/katana-skipper/tree/master/rabbitmq)** - service for RabbitMQ broker
-* **[skipper-lib](https://github.com/katanaml/katana-skipper/tree/master/skipper-lib)** - reusable Python library to streamline event communication through RabbitMQ
-* **[skipper-lib-js](https://github.com/katanaml/katana-skipper/tree/master/skipper-lib-js)** - reusable Node.js library to streamline event communication through RabbitMQ
-* **[logger](https://github.com/katanaml/katana-skipper/tree/master/logger)** - logger service
-
-### API URLs
-
-* Web API:
-
-```
-http://127.0.0.1:8080/api/v1/skipper/tasks/docs
+```bash
+cd backend
+pip install -r requirements-dev.txt
+pre-commit install
 ```
 
-If running on local Kubernetes with Docker Desktop:
+Details: [PEP8_STYLE_GUIDE.md](./PEP8_STYLE_GUIDE.md).
 
-```
-http://kubernetes.docker.internal/api/v1/skipper/tasks/docs
-```
+---
 
-* RabbitMQ:
+## API at a glance
 
-```
-http://localhost:15672/ (skipper/welcome1)
-```
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v1/data/process` | Sync processing (RabbitMQ RPC) |
+| POST | `/api/v1/data/process-async` | Async processing (Celery; returns task ID) |
+| GET | `/api/v1/data/process-async/{task_id}` | Task status |
+| GET | `/api/v1/database/records` | List processing records |
+| GET | `/api/v1/database/records/{task_id}` | One record |
+| GET | `/api/v1/database/logs` | Task logs |
+| DELETE | `/api/v1/database/records/{task_id}` | Delete record |
+| GET | `/api/v1/metrics` | Queue depth, RPC latency/timeouts |
 
-If running on local Kubernets, make sure port forwarding is enabled:
+Optional **`Idempotency-Key`** header on both POST data endpoints (Redis, 1h TTL).
 
-```
-kubectl -n rabbits port-forward rabbitmq-0 15672:15672
-```
+---
 
-## Skipper Library on PyPI
+## Documentation
 
-* **[PyPI](https://pypi.org/project/skipper-lib/)** - skipper-lib is on PyPI
+| Doc | Description |
+|-----|-------------|
+| [ARCHITECTURE.md](./docs/ARCHITECTURE.md) | System design, components, flows |
+| [FLOW_EXAMPLE.md](./docs/FLOW_EXAMPLE.md) | Sync vs async processing walkthrough |
+| [SEQUENCE-DIAGRAMS.md](./docs/SEQUENCE-DIAGRAMS.md) | Use-case sequence diagrams |
+| [backend/alembic/README.md](./backend/alembic/README.md) | Migrations (DB name **fastapi_db**) |
+| [PEP8_STYLE_GUIDE.md](./PEP8_STYLE_GUIDE.md) | Style and tooling |
+| [GIT_SETUP.md](./GIT_SETUP.md) | Git and pre-commit |
 
-## Skipper Library on NPM
+---
 
-* **[NPM](https://www.npmjs.com/package/@katanaml/skipper-lib-js)** - skipper-lib-js is on NPM
+## Technology stack
 
-## Cloud Deployment Guides
+- **FastAPI** — Web framework  
+- **SQLModel** — ORM (Pydantic + SQLAlchemy)  
+- **PostgreSQL** — Database  
+- **Celery** + **Redis** — Async task queue and result backend  
+- **RabbitMQ** + **kombu** — RPC and DLQ  
+- **Docker Compose** — Local dev; Kubernetes configs included  
 
-* **[OKE](https://github.com/katanaml/katana-skipper/blob/master/README-OKE.md)** - deployment guide for Oracle Container Engine for Kubernetes
-
-* **[GKE](https://github.com/katanaml/katana-skipper/blob/master/README-GKE.md)** - deployment guide for Google Kubernetes Engine
-
-## Usage
-
-You can use Skipper engine to run Web API, workflow and communicate with a group of ML microservices implemented under services package.
-
-Skipper can be deployed to any Cloud vendor with Kubernetes or Docker support. You can scale Skipper runtime on Cloud using Kubernetes commands.
-
-[![IMAGE ALT TEXT](https://img.youtube.com/vi/nXHDSehjxV0/0.jpg)](https://www.youtube.com/watch?v=nXHDSehjxV0 "MLOps: Extend Skipper ML Services")
-
-[![IMAGE ALT TEXT](https://img.youtube.com/vi/Xx5mrRMRXKQ/0.jpg)](https://www.youtube.com/watch?v=Xx5mrRMRXKQ "BIY Workflow with FastAPI, Python and Skipper")
+---
 
 ## License
 
-Licensed under the Apache License, Version 2.0. Copyright 2020-2021 Katana ML, Andrej Baranovskij. [Copy of the license](https://github.com/katanaml/katana-skipper/blob/master/LICENSE).
+Apache License 2.0. See [LICENSE](./LICENSE).

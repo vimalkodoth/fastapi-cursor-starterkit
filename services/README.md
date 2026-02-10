@@ -1,14 +1,22 @@
-# Katana ML Skipper Microservices
+# FastAPI Starter Kit - Microservices
 
-- Data processing service
-- ML model training service
-- ML model serving service
-- Mobilenet - TensorFlow.js model service
+This directory contains microservices for the FastAPI starter kit.
 
-## Author
+## Current Services
 
-[Katana ML](https://katanaml.io), [Andrej Baranovskij](https://github.com/abaranovskis-redsamurai)
+- **dataservice** - Simple data processing service that handles data transformation via RabbitMQ
+
+## Adding New Services
+
+To add a new microservice:
+
+1. Create a new folder under `services/`
+2. Implement a service class with a `call()` method that accepts JSON string and returns `(response_json_string, task_type)`
+3. Use `EventReceiver` from `rabbitmq_client.py` to listen to RabbitMQ queues
+4. Add service configuration to `docker-compose.yml`
+
+See `dataservice/` for a reference implementation.
 
 ## License
 
-Licensed under the Apache License, Version 2.0. Copyright 2020-2021 Katana ML, Andrej Baranovskij. [Copy of the license](https://github.com/katanaml/katana-pipeline/blob/master/LICENSE).
+Licensed under the Apache License, Version 2.0.
