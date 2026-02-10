@@ -4,7 +4,7 @@ Sits in front of route handlers; no changes to services or repositories.
 """
 import json
 import os
-from typing import Callable, Optional
+from typing import Optional
 
 from starlette.datastructures import Headers
 from starlette.responses import Response

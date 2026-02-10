@@ -2,7 +2,7 @@
 Pydantic models for API request/response validation.
 """
 from datetime import datetime
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel
 

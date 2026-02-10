@@ -2,7 +2,6 @@
 Alembic environment for FastAPI Starter Kit.
 Uses DATABASE_URL from app.core.database and SQLModel.metadata for autogenerate.
 """
-import os
 from logging.config import fileConfig
 
 from alembic import context

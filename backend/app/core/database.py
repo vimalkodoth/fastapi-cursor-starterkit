@@ -15,7 +15,7 @@ from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 # Import all models so they're registered with SQLModel
-from app.models.database import DataProcessingRecord, TaskLog
+from app.models.database import DataProcessingRecord, TaskLog  # noqa: F401
 
 # Sync URL (psycopg2) - for init_db and Celery worker
 DATABASE_URL = os.getenv(
