@@ -34,7 +34,7 @@
 ```bash
 # Clone and start
 git clone <your-repo-url>
-cd katana-skipper
+cd fastapi-cursor-starterkit
 docker compose up -d
 ```
 
