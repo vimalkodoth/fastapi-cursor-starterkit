@@ -21,6 +21,7 @@ This project uses **PostgreSQL** with **SQLAlchemy** (and SQLModel) and **Alembi
 
 ## Queries and performance
 
+- **CQRS:** Use **read** repositories (and query services) for all read operations; use **write** repositories (and command services) for create/update/delete. This allows scaling reads independently (e.g. read replicas, caches). See `.cursor/rules/cqrs.md`.
 - **Optimize queries**; avoid N+1 (eager load or batch where needed).
 - Use proper **filtering** and **pagination** for list endpoints.
 - Prefer **single, clear queries** over many small ones; use transactions for multi-step writes.

@@ -17,9 +17,9 @@ Standards derived from this project’s implementation. Follow these so the code
 
 ## 1. Project structure and layers
 
-- **Endpoints (controllers):** `backend/app/api/v1/endpoints/` — one file per domain (e.g. `data.py`, `database.py`, `metrics.py`). Only HTTP concerns: parse request, call service/repo via `Depends`, return response or raise `HTTPException`.
-- **Business logic:** `backend/app/services/` — services receive repositories (and optionally other deps) via constructor; use `AsyncSession` for DB when in the API path. No raw request/response objects.
-- **Data access:** `backend/app/repositories/` — repositories receive `AsyncSession`; perform queries and commits. No business rules.
+- **Endpoints (controllers):** `backend/app/api/v1/endpoints/` — one file per domain (e.g. `data.py`, `database.py`, `metrics.py`). Only HTTP concerns: parse request, call service/repo via `Depends`, return response or raise `HTTPException`. Use **command** service for write operations (POST/PUT/PATCH/DELETE) and **query** service for read operations (GET). See `.cursor/rules/cqrs.md`.
+- **Business logic:** `backend/app/services/` — use **command** services for writes and **query** services for reads (CQRS). Services receive repositories via constructor; use `AsyncSession` for DB when in the API path. No raw request/response objects.
+- **Data access:** `backend/app/repositories/` — use **write** repositories (create/update/delete) and **read** repositories (get/list) per domain. Repositories receive `AsyncSession`; perform queries and commits. No business rules.
 - **Shared dependencies:** `backend/app/api/v1/deps.py` — define `get_*` functions that return service or repository instances (injecting `get_async_session`). Use these in route handlers via `Depends(...)`.
 - **Models:** `backend/app/models/database.py` (SQLModel table models), `backend/app/models/schemas.py` (Pydantic request/response). DB name is **fastapi_db**.
 

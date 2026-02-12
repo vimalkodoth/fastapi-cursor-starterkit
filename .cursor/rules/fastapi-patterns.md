@@ -5,7 +5,7 @@ Supplement to `.cursor/rules/fastapi-python-best-practices.md`. Project-specific
 ## Project structure
 
 - Use a clear directory structure; keep routes organized by domain (e.g. under `api/v1/endpoints/`).
-- Use **dependency injection** (`Depends`) for session, services, and shared resources.
+- Use **dependency injection** (`Depends`) for session, services, and shared resources. For data domains, inject **command** services for write operations and **query** services for read operations (CQRS). See `.cursor/rules/cqrs.md`.
 - Use a **config** module or env for settings; keep middleware and startup logic in one place.
 
 ## API design
