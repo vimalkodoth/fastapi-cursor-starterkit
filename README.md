@@ -105,7 +105,7 @@ New API routes → `backend/app/api/v1/endpoints/`. New logic → `services/` or
 ## Code quality
 
 - **Tools:** Black, isort, flake8, mypy; pre-commit hooks.
-- **Scope:** Backend Python only (`backend/`).
+- **Scope:** All Python services: `backend/`, `logger/`, `services/` (entire tree), and any other top-level service added to the root Makefile. Same style and standards everywhere.
 
 ```bash
 # From repo root
@@ -123,7 +123,7 @@ pre-commit install
 pre-commit install --hook-type pre-push
 ```
 
-Both hooks (commit: black, isort, flake8; push: uncommitted-changes warning, optional tests) are managed by pre-commit; no manual copy needed.
+Both hooks (commit: black, isort, flake8 on all Python services; push: uncommitted-changes warning, optional tests) are managed by pre-commit; no manual copy needed.
 
 Details: [PEP8_STYLE_GUIDE.md](./PEP8_STYLE_GUIDE.md).
 

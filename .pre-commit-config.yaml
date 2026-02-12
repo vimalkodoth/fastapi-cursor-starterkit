@@ -1,24 +1,25 @@
+# Python scope: backend, logger, entire services/ tree. New top-level service? Add it here and in root Makefile PYTHON_SERVICES.
 repos:
   - repo: https://github.com/psf/black
     rev: 23.12.1
     hooks:
       - id: black
         language_version: python3.9
-        files: ^backend/.*\.py$
+        files: ^(backend|logger|services)/.*\.py$
         types: [python]
 
   - repo: https://github.com/pycqa/isort
     rev: 5.13.2
     hooks:
       - id: isort
-        files: ^backend/.*\.py$
+        files: ^(backend|logger|services)/.*\.py$
         types: [python]
 
   - repo: https://github.com/pycqa/flake8
     rev: 7.0.0
     hooks:
       - id: flake8
-        files: ^backend/.*\.py$
+        files: ^(backend|logger|services)/.*\.py$
         types: [python]
 
   - repo: local

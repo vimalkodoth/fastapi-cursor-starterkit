@@ -4,11 +4,12 @@ Lightweight implementation using industry-standard kombu library.
 Uses a Dead Letter Exchange (DLX) and Dead Letter Queue (DLQ): failed messages
 are nack'd with requeue=False and routed to the DLQ for inspection/retry.
 """
-from kombu import Connection, Exchange, Queue, Producer, Consumer
-from kombu.mixins import ConsumerMixin
-import requests
 import json
-from typing import Optional, Callable
+from typing import Callable, Optional
+
+import requests
+from kombu import Connection, Exchange, Producer, Queue
+from kombu.mixins import ConsumerMixin
 
 # Dead letter: exchange and queue names (suffix to main queue name)
 DLX_SUFFIX = "_dlx"
@@ -19,13 +20,21 @@ class EventReceiver(ConsumerMixin):
     """
     RabbitMQ event receiver using kombu for listening to queues and processing messages.
     """
-    
-    def __init__(self, username: str, password: str, host: str, port: int,
-                 queue_name: str, service: Callable, service_name: str,
-                 logger_url: Optional[str] = None):
+
+    def __init__(
+        self,
+        username: str,
+        password: str,
+        host: str,
+        port: int,
+        queue_name: str,
+        service: Callable,
+        service_name: str,
+        logger_url: Optional[str] = None,
+    ):
         """
         Initialize EventReceiver with kombu.
-        
+
         Args:
             username: RabbitMQ username
             password: RabbitMQ password
@@ -40,14 +49,14 @@ class EventReceiver(ConsumerMixin):
         self.service_name = service_name
         self.queue_name = queue_name
         self.logger_url = logger_url
-        
+
         # Create connection
-        connection_url = f'amqp://{username}:{password}@{host}:{port}//'
+        connection_url = f"amqp://{username}:{password}@{host}:{port}//"
         self.connection = Connection(connection_url)
-        
+
         print(f"Awaiting requests from [x] {queue_name} [x]")
-    
-    def get_consumers(self, Consumer, channel):
+
+    def get_consumers(self, consumer_cls, channel):
         """Set up consumer for the queue with Dead Letter Exchange and DLQ."""
         dlx_name = self.queue_name + DLX_SUFFIX
         dlq_name = self.queue_name + DLQ_SUFFIX
@@ -68,45 +77,47 @@ class EventReceiver(ConsumerMixin):
                 "x-dead-letter-routing-key": dlq_name,
             },
         )
-        return [Consumer(
-            queues=[main_queue],
-            callbacks=[self.on_request],
-            prefetch_count=1,
-        )]
-    
+        return [
+            consumer_cls(
+                queues=[main_queue],
+                callbacks=[self.on_request],
+                prefetch_count=1,
+            )
+        ]
+
     def on_request(self, body, message):
         """Handle incoming message."""
         service_instance = self.service_worker()
-        correlation_id = message.properties.get('correlation_id', 'unknown')
-        
-        self._log_event(correlation_id, 'start', '-')
-        
+        correlation_id = message.properties.get("correlation_id", "unknown")
+
+        self._log_event(correlation_id, "start", "-")
+
         try:
             # Process message - convert body to string if needed
             if isinstance(body, dict):
                 body_str = json.dumps(body)
             elif isinstance(body, bytes):
-                body_str = body.decode('utf-8')
+                body_str = body.decode("utf-8")
             else:
                 body_str = str(body)
-            
+
             response, task_type = service_instance.call(body_str)
-            
+
             # Send response
             producer = Producer(message.channel)
             producer.publish(
                 response,
-                exchange='',
-                routing_key=message.properties.get('reply_to'),
+                exchange="",
+                routing_key=message.properties.get("reply_to"),
                 correlation_id=correlation_id,
-                serializer='json',
-                retry=True
+                serializer="json",
+                retry=True,
             )
-            
+
             message.ack()
-            self._log_event(correlation_id, 'end', '-')
-            print(f'Processed request: {task_type}')
-            
+            self._log_event(correlation_id, "end", "-")
+            print(f"Processed request: {task_type}")
+
         except Exception as e:
             response = {
                 "error": "Receiver exception",
@@ -128,7 +139,7 @@ class EventReceiver(ConsumerMixin):
             print(f"Receiver exception: {str(e)}")
             # Reject so message is dead-lettered to DLQ for inspection/retry
             message.reject(requeue=False)
-    
+
     def _log_event(self, correlation_id: str, task_type: str, description: str):
         """Log event to logger service if available."""
         if self.logger_url:
@@ -137,7 +148,7 @@ class EventReceiver(ConsumerMixin):
                 "queue_name": self.queue_name,
                 "service_name": self.service_name,
                 "task_type": task_type,
-                "description": description
+                "description": description,
             }
             try:
                 requests.post(self.logger_url, json=params, timeout=1)

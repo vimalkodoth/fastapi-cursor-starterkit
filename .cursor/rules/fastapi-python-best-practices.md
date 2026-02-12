@@ -1,6 +1,12 @@
-# FastAPI & Python best practices (adapted for this project)
+# FastAPI & Python best practices
 
-Adapted from [awesome-cursorrules](https://github.com/PatrickJS/awesome-cursorrules) (Python/FastAPI rules). This project is API-only; no frontend.
+This file holds **project-specific** FastAPI and Python rules. For general style and patterns, see:
+
+- `.cursor/rules/python-style.md` — Python 3.x, PEP 8, RORO, naming
+- `.cursor/rules/clean-code.md` — Clean code guidelines
+- `.cursor/rules/error-handling.md` — Error handling and guard clauses
+- `.cursor/rules/database-postgres.md` — PostgreSQL, Alembic, pooling
+- `.cursor/rules/fastapi-patterns.md` — FastAPI structure, middleware, lifespan
 
 ## Python / FastAPI style
 
@@ -33,8 +39,8 @@ Adapted from [awesome-cursorrules](https://github.com/PatrickJS/awesome-cursorru
 
 ## Testing and quality
 
-- Run `make format` (black, isort) and `make lint` (flake8, mypy) after editing backend code. See `.cursor/rules/commands-and-workflow.md`.
-- Follow PEP 8 and project style (`.flake8`, `PEP8_STYLE_GUIDE.md` in repo root). Use absolute imports; prefer type hints.
+- Run `make format` (black, isort) and `make lint` (flake8, mypy) after editing any Python code in `backend/`, `logger/`, or `services/`. See `.cursor/rules/commands-and-workflow.md`.
+- Follow PEP 8 and project style (`.flake8`, `PEP8_STYLE_GUIDE.md` in repo root) in **all services**. Use absolute imports; prefer type hints.
 - For simple one-off startup (e.g. `init_db` / create_all), `@app.on_event("startup")` is acceptable; prefer lifespan for multi-step startup/shutdown.
 
 ## Blocking I/O in request path
@@ -45,7 +51,5 @@ Adapted from [awesome-cursorrules](https://github.com/PatrickJS/awesome-cursorru
 ## What not to do (this project)
 
 - Do not add frontend or UI code. Do not use Flask-specific patterns (this is FastAPI + SQLModel).
-- Do not block the event loop in API handlers; use async I/O or run blocking calls in a thread pool. Do not skip lint/format before committing.
+- Do not block the event loop in API handlers; use async I/O or run blocking calls in a thread pool. Do not skip lint/format before committing (applies to all services).
 - Do not change the database name from **fastapi_db** or remove DLQ/reject(requeue=False) from RabbitMQ consumers.
-
-Source: [awesome-cursorrules](https://github.com/PatrickJS/awesome-cursorrules) (FastAPI and Python rules), tailored for this starter kit.
