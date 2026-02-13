@@ -7,7 +7,7 @@ description: CQRS (Command Query Responsibility Segregation) for this backend. U
 
 - **Scope:** Backend API in `backend/`. Apply CQRS to `backend/app/services/`, `backend/app/repositories/`, and `backend/app/api/v1/endpoints/`. See `.cursor/rules/cqrs.md` for the canonical rule.
 - **Layers:** Endpoints → services → repositories (unchanged). Within that, use **command** service/repo for writes and **query** service/repo for reads. Dependencies in `backend/app/api/v1/deps.py` must expose separate command and query factories where CQRS applies.
-- After edits run **`make format`** and **`make lint`** from repo root. Full context: `.agents/skills/README.md` and `.cursor/rules/project.md`.
+- After edits run **`make format`** and **`make lint`** from repo root. Full context: `.cursor/skills/README.md` and `.cursor/rules/project.md`.
 
 ---
 
@@ -55,5 +55,5 @@ Same **domain** (e.g. “data records”) can have both; they live in separate c
 ## Alignment with other rules
 
 - **Project structure:** `.cursor/rules/project.md` — CQRS lives within the same layers (endpoints, services, repositories).
-- **Design patterns:** `.agents/skills/python-design-patterns/SKILL.md` — CQRS is separation of concerns and single responsibility applied to read vs write.
-- **FastAPI:** `.cursor/rules/fastapi-patterns.md`, `.agents/skills/fastapi-best-practices/SKILL.md` — keep using `Depends`, async, and response models; CQRS only changes *which* service/repo you inject.
+- **Design patterns:** `.cursor/skills/python-design-patterns/SKILL.md` — CQRS is separation of concerns and single responsibility applied to read vs write.
+- **FastAPI:** `.cursor/rules/fastapi-patterns.md`, `.cursor/skills/fastapi-best-practices/SKILL.md` — keep using `Depends`, async, and response models; CQRS only changes *which* service/repo you inject.

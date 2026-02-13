@@ -8,7 +8,7 @@ description: Common Python anti-patterns to avoid. Use as a checklist when revie
 - Python lives in `backend/`, `services/`. After edits run **`make format`** and **`make lint`** from repo root (see `.cursor/commands/lint.md`).
 - **Async:** Do not block the event loop. If blocking is required (e.g. sync RPC), use **`await asyncio.to_thread(blocking_func, ...)`**; see `.cursor/rules/fastapi-python-best-practices.md`.
 - **Response models:** Use Pydantic/SQLModel response schemas (not raw ORM models). In Pydantic v2 use **`model_validate(orm_object)`**, not `from_orm`.
-- Full context: `.agents/skills/README.md` and `.cursor/rules/`.
+- Full context: `.cursor/skills/README.md` and `.cursor/rules/`.
 
 ---
 

@@ -37,4 +37,4 @@ Do not invent new commands; use the above. Python scope for lint/format/check an
 
 ## Agent skills
 
-For **agent skills** under `.agents/skills/`, see **`.agents/skills/README.md`** for alignment with this project and Cursor rules. Key skills: **fastapi-best-practices** (FastAPI standards), **cqrs-pattern** (CQRS for API features), **ai-solution-quality** (optimal solutions, no workarounds, risk communication when using AI), python-anti-patterns, python-design-patterns, python-testing-patterns, python-performance-optimization.
+For **agent skills** under `.cursor/skills/` (and `.claude/skills/`, `.codex/skills/` via symlinks for multi-tool use), see **`.cursor/skills/README.md`** for alignment with this project and Cursor rules. Key skills: **fastapi-best-practices** (FastAPI standards), **cqrs-pattern** (CQRS for API features), **ai-solution-quality** (optimal solutions, no workarounds, risk communication when using AI), python-anti-patterns, python-design-patterns, python-testing-patterns, python-performance-optimization.

@@ -6,8 +6,8 @@ description: Python design patterns including KISS, Separation of Concerns, Sing
 ## In this repository
 
 - **Layers:** Handlers = `backend/app/api/v1/endpoints/`, business logic = `backend/app/services/`, data access = `backend/app/repositories/`. Dependency injection in FastAPI is via **`Depends()`**; constructor injection still applies for services that receive repositories. See `.cursor/rules/project.md`.
-- **CQRS:** This project separates **commands** (writes) and **queries** (reads): command services + write repositories for create/update/delete; query services + read repositories for list/get. When designing or refactoring features, use the CQRS split. See `.cursor/rules/cqrs.md` and `.agents/skills/cqrs-pattern/SKILL.md`.
-- After edits run **`make format`** and **`make lint`** from repo root. Full context: `.agents/skills/README.md` and `.cursor/rules/`.
+- **CQRS:** This project separates **commands** (writes) and **queries** (reads): command services + write repositories for create/update/delete; query services + read repositories for list/get. When designing or refactoring features, use the CQRS split. See `.cursor/rules/cqrs.md` and `.cursor/skills/cqrs-pattern/SKILL.md`.
+- After edits run **`make format`** and **`make lint`** from repo root. Full context: `.cursor/skills/README.md` and `.cursor/rules/`.
 
 ---
 

@@ -43,4 +43,4 @@ If there is **no** correct or maintainable solution under the given constraints 
 - Plan and strategy: `docs/AI_CODING_STANDARDS.md`
 - Quality and scope: `.cursor/rules/code-quality.md`, `.cursor/rules/clean-code.md`
 - Project structure: `.cursor/rules/project.md`, `.cursor/rules/standards.md`
-- Agent skill: `.agents/skills/ai-solution-quality/SKILL.md` (checklist and examples)
+- Agent skill: `.cursor/skills/ai-solution-quality/SKILL.md` (checklist and examples)

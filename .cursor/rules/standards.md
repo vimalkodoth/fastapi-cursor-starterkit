@@ -7,7 +7,7 @@
 
 ## Patterns to follow
 
-- **CQRS:** Separate **commands** (writes) and **queries** (reads). Use command services + write repositories for create/update/delete; query services + read repositories for list/get. Endpoints inject the appropriate service. See `.cursor/rules/cqrs.md` and `.agents/skills/cqrs-pattern/SKILL.md`.
+- **CQRS:** Separate **commands** (writes) and **queries** (reads). Use command services + write repositories for create/update/delete; query services + read repositories for list/get. Endpoints inject the appropriate service. See `.cursor/rules/cqrs.md` and `.cursor/skills/cqrs-pattern/SKILL.md`.
 - **API endpoints:** Use FastAPI `Depends` for session and services. See `backend/app/api/v1/endpoints/data.py` and `database.py` for request/response and error handling.
 - **Services:** Use async `AsyncSession` in API path; sync `Session` only in Celery tasks and sync helpers. See `backend/app/core/database.py` (sync vs async engines).
 - **RabbitMQ consumers:** Use DLQ: declare DLX and DLQ, main queue with `x-dead-letter-exchange` and `x-dead-letter-routing-key`, and on processing failure call `message.reject(requeue=False)`. See `backend/app/infrastructure/rabbitmq.py` and `services/dataservice/rabbitmq_client.py`.

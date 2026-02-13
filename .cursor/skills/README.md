@@ -1,6 +1,6 @@
 # Agent skills — project alignment
 
-Skills in this folder are **aligned with this repository**. When using any skill, apply it in the context below so there are no conflicts with Cursor rules or project code.
+Skills in this folder (`.cursor/skills/`) are **aligned with this repository** and follow the [Agent Skills open standard](https://agentskills.io). Cursor loads them from here; Claude and Codex load from `.claude/skills/` and `.codex/skills/` (symlinks to this folder). See `docs/AGENT_SKILLS.md` for multi-tool compatibility. When using any skill, apply it in the context below so there are no conflicts with Cursor rules or project code.
 
 ## Repository context
 
@@ -35,4 +35,4 @@ Skills in this folder are **aligned with this repository**. When using any skill
 | **python-testing-patterns** | Test error paths and edge cases (error-handling, anti-patterns). In this repo, flow tests are in scripts/; pytest would go under backend/tests/ or per-service. |
 | **python-performance-optimization** | Async I/O in API path; blocking only via `asyncio.to_thread`. DB: use AsyncSession, pooling, batching; see database-postgres.md. CQRS allows scaling reads (replicas, caches) independently. After changes: run `make format` and `make lint`. |
 
-No skill should suggest: a different project layout, npm/frontend, SQLite as the app DB, skipping format/lint, workarounds as the primary solution, or implementing risky/suboptimal code without user acceptance. When in doubt, prefer `.cursor/rules` and this README.
+No skill should suggest: a different project layout, npm/frontend, SQLite as the app DB, skipping format/lint, workarounds as the primary solution, or implementing risky/suboptimal code without user acceptance. When in doubt, prefer `.cursor/rules` and this README. Canonical skill location: `.cursor/skills/` (Cursor). For Claude/Codex, use the symlinked `.claude/skills/` or `.codex/skills/`.

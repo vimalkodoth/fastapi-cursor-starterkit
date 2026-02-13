@@ -7,7 +7,7 @@ description: FastAPI standards and best practices for this project. Use when add
 
 - **Scope:** FastAPI app lives in `backend/`. Python also in `services/`; same style applies. After edits run **`make format`** and **`make lint`** from repo root.
 - **Rules:** `.cursor/rules/fastapi-python-best-practices.md`, `.cursor/rules/fastapi-patterns.md`, `.cursor/rules/standards.md`, `.cursor/rules/project.md`.
-- Full context: `.agents/skills/README.md`.
+- Full context: `.cursor/skills/README.md`.
 
 ---
 

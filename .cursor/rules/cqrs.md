@@ -37,4 +37,4 @@ This project uses **CQRS** for the backend API: separate **commands** (writes) f
 ## Alignment
 
 - **Layers:** Endpoints → services → repositories (unchanged). Within that, commands and queries are separate services/repos. See `.cursor/rules/project.md`.
-- **Design patterns:** CQRS is an application of separation of concerns and single responsibility. See `.agents/skills/python-design-patterns/SKILL.md` and `.agents/skills/cqrs-pattern/SKILL.md`.
+- **Design patterns:** CQRS is an application of separation of concerns and single responsibility. See `.cursor/skills/python-design-patterns/SKILL.md` and `.cursor/skills/cqrs-pattern/SKILL.md`.

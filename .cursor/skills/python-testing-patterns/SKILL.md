@@ -7,7 +7,7 @@ description: Implement comprehensive testing strategies with pytest, fixtures, m
 
 - **Test flows:** This project uses **scripts** for flow tests: `scripts/user-journey-tests.sh`, `scripts/test-async-flow.sh`. If you add pytest, place tests under **`backend/tests/`** (or per-service under `services/<name>/tests/`).
 - **Database:** App uses **PostgreSQL** (DB name **fastapi_db**), not SQLite. Use PostgreSQL or mocks for integration tests; see `.cursor/rules/database-postgres.md`.
-- After editing code run **`make format`** and **`make lint`** from repo root. Full context: `.agents/skills/README.md` and `.cursor/rules/`.
+- After editing code run **`make format`** and **`make lint`** from repo root. Full context: `.cursor/skills/README.md` and `.cursor/rules/`.
 
 ---
 

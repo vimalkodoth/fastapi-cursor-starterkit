@@ -7,7 +7,7 @@ description: Profile and optimize Python code using cProfile, memory profilers, 
 
 - **Async in API path:** Use **async** for I/O in route handlers; do not block the event loop. If you must call a blocking function (e.g. sync RPC), use **`await asyncio.to_thread(blocking_func, ...)`**. See `.cursor/rules/fastapi-python-best-practices.md`.
 - **Database:** App uses **PostgreSQL** with **SQLModel**, **AsyncSession**, and connection pooling. Prefer async DB operations, batching, and query optimization; see `.cursor/rules/database-postgres.md`. Examples in this skill use sqlite for illustration; apply patterns to Postgres/async where relevant.
-- After edits run **`make format`** and **`make lint`** from repo root. Full context: `.agents/skills/README.md` and `.cursor/rules/`.
+- After edits run **`make format`** and **`make lint`** from repo root. Full context: `.cursor/skills/README.md` and `.cursor/rules/`.
 
 ---
 
