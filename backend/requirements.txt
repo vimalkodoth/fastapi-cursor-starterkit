@@ -10,8 +10,8 @@ sqlmodel>=0.0.32
 psycopg2-binary>=2.9.9
 asyncpg>=0.29.0
 
-# Celery (kombu installed as celery dependency; 4.6.x for celery 4.x)
-celery==4.4.7
+# Celery (kombu installed as celery dependency). Use 4.4.6: 4.4.7 has invalid PyPI metadata (pytz spec) and fails with pip 24.1+.
+celery==4.4.6
 redis>=4.0.0
 
 # HTTP and migrations
