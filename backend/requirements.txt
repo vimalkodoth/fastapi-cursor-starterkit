@@ -18,3 +18,10 @@ redis>=4.0.0
 requests>=2.25.1
 alembic>=1.13.1
 importlib-metadata>=4.8.3
+
+# OpenTelemetry (traces, metrics, logs -> OTLP collector -> SigNoz)
+opentelemetry-api>=1.28.0
+opentelemetry-sdk>=1.28.0
+opentelemetry-exporter-otlp-proto-grpc>=1.28.0
+opentelemetry-instrumentation-fastapi>=0.49b0
+opentelemetry-instrumentation-celery>=0.49b0

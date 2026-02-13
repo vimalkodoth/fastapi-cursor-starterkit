@@ -2,10 +2,10 @@
 # User journey tests for FastAPI Starter Kit
 # Run after: docker compose up -d (and wait for services to be ready)
 # Usage: ./scripts/user-journey-tests.sh [BASE_URL]
-# Default BASE_URL: http://localhost:8080 (via Nginx)
+# Default BASE_URL: http://localhost:8081 (via Nginx)
 
 set -e
-BASE_URL="${1:-http://localhost:8080}"
+BASE_URL="${1:-http://localhost:8081}"
 API="${BASE_URL}/api/v1"
 
 echo "=== FastAPI Starter Kit – User journey tests ==="

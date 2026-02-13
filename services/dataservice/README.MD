@@ -77,8 +77,6 @@ The service processes different data types based on the `description` field:
 - `RABBITMQ_PASSWORD` - RabbitMQ password (default: `welcome1`)
 - `QUEUE_NAME` - Queue name to listen to (default: `data_queue`)
 - `SERVICE_NAME` - Service name (default: `data`)
-- `LOGGER_RECEIVER_URL` - Logger service URL for event tracking
-
 ## Structure
 
 ```

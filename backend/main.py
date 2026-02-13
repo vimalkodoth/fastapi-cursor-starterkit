@@ -7,6 +7,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1 import api_router
 from app.core.database import init_db
 from app.core.idempotency import IdempotencyMiddleware
+from app.observability import init_observability
+
+# OpenTelemetry: set tracer provider (no-op if OTEL_EXPORTER_OTLP_ENDPOINT not set)
+init_observability()
 
 app = FastAPI(
     title="FastAPI Starter Kit",
@@ -26,6 +30,9 @@ app.add_middleware(
 )
 # Idempotency: optional Idempotency-Key header, Redis 1h TTL (no change to services/repos)
 app.add_middleware(IdempotencyMiddleware)
+
+# OpenTelemetry: auto-instrument FastAPI (traces for HTTP requests)
+init_observability(app)
 
 
 @app.on_event("startup")

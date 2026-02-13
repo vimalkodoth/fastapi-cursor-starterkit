@@ -13,6 +13,18 @@ from app.services.data_service import DataService
 
 router = APIRouter(prefix="/data", tags=["data"])
 
+_ENDPOINT_PROCESS = "/process"
+_ENDPOINT_PROCESS_ASYNC = "/process-async"
+
+
+def _api_emit_log(body: str, **attrs):
+    try:
+        from app.observability import emit_log
+
+        emit_log(body, attributes={**attrs, "layer": "api"})
+    except Exception:
+        pass
+
 
 @router.post("/process", response_model=TaskResult, status_code=200)
 async def process_data(
@@ -22,11 +34,22 @@ async def process_data(
     Process data synchronously via data service using RabbitMQ.
     Saves the record to database (non-blocking async DB).
     """
+    _api_emit_log("api sync request start", endpoint=_ENDPOINT_PROCESS, method="POST")
     try:
-        return await service.process_data_sync_and_save(
+        result = await service.process_data_sync_and_save(
             payload=request.payload, description=request.description
         )
+        _api_emit_log(
+            "api sync request end", endpoint=_ENDPOINT_PROCESS, status="success"
+        )
+        return result
     except ValueError as e:
+        _api_emit_log(
+            "api sync request end",
+            endpoint=_ENDPOINT_PROCESS,
+            status="error",
+            error=str(e),
+        )
         raise HTTPException(status_code=503, detail=str(e))
 
 
@@ -38,9 +61,19 @@ def process_data_async(
     Process data asynchronously via Celery task.
     Returns a task ID that can be used to check status.
     """
-    return service.process_data_async(
+    _api_emit_log(
+        "api async request start", endpoint=_ENDPOINT_PROCESS_ASYNC, method="POST"
+    )
+    result = service.process_data_async(
         payload=request.payload, description=request.description
     )
+    _api_emit_log(
+        "api async request end",
+        endpoint=_ENDPOINT_PROCESS_ASYNC,
+        status="accepted",
+        task_id=result.get("task_id", ""),
+    )
+    return result
 
 
 @router.get("/process-async/{task_id}", response_model=TaskResult, status_code=200)

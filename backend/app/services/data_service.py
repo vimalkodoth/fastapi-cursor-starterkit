@@ -75,9 +75,24 @@ class DataService:
     ) -> Dict[str, Any]:
         """
         Process data asynchronously via Celery task (no DB in request path).
+        Propagates trace context in the task payload so the worker continues the same trace
+        (API → Celery worker → data-service in one trace). See backend celery.py task_prerun.
         """
         request_payload = {"payload": payload, "description": description}
-        task = process_data_task.delay(json.dumps(request_payload))
+        try:
+            from app.observability import inject_trace_context
+
+            carrier = {}
+            inject_trace_context(carrier)
+            if carrier:
+                request_payload["_trace_context"] = carrier
+        except Exception:  # pylint: disable=broad-except
+            pass
+        # headers={} allows instrumentor to inject too; worker prefers payload for reliability.
+        task = process_data_task.apply_async(
+            args=[json.dumps(request_payload)],
+            headers={},
+        )
         return {
             "task_id": str(task.id),
             "task_status": "Processing",

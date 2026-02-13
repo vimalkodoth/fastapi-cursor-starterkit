@@ -24,7 +24,7 @@ async def get_processing_records(
     Get data processing records from database (non-blocking async).
     """
     records = await service.get_processing_records(limit=limit, offset=offset)
-    return [RecordResponse.model_validate(r) for r in records]
+    return [RecordResponse.model_validate(r.model_dump()) for r in records]
 
 
 @router.get("/records/{task_id}", response_model=RecordResponse)
@@ -57,7 +57,7 @@ async def get_task_logs(
         )
     else:
         logs = await task_repo.get_logs(limit=limit, offset=offset)
-    return [TaskLogResponse.model_validate(log) for log in logs]
+    return [TaskLogResponse.model_validate(log.model_dump()) for log in logs]
 
 
 @router.delete("/records/{task_id}", status_code=204)

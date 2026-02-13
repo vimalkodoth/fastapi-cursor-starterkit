@@ -2,7 +2,7 @@
 
 ## Code style
 
-- Follow PEP 8 in **all Python services** (backend, logger, entire `services/` tree, and any other top-level Python service in the Makefile). Use **black** (line length 88) and **isort** for formatting. Config: `.flake8`, root `Makefile`, `.pre-commit-config.yaml`.
+- Follow PEP 8 in **all Python services** (backend, entire `services/` tree, and any other top-level Python service in the Makefile). Use **black** (line length 88) and **isort** for formatting. Config: `.flake8`, root `Makefile`, `.pre-commit-config.yaml`.
 - Do not copy full style guides into rules; run `make format` and `make lint` from repo root. For detailed style, see `PEP8_STYLE_GUIDE.md` in the repo.
 
 ## Patterns to follow

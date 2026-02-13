@@ -39,7 +39,7 @@ This file holds **project-specific** FastAPI and Python rules. For general style
 
 ## Testing and quality
 
-- Run `make format` (black, isort) and `make lint` (flake8, mypy) after editing any Python code in `backend/`, `logger/`, or `services/`. See `.cursor/rules/commands-and-workflow.md`.
+- Run `make format` (black, isort) and `make lint` (flake8, mypy) after editing any Python code in `backend/` or `services/`. See `.cursor/rules/commands-and-workflow.md`.
 - Follow PEP 8 and project style (`.flake8`, `PEP8_STYLE_GUIDE.md` in repo root) in **all services**. Use absolute imports; prefer type hints.
 - For simple one-off startup (e.g. `init_db` / create_all), `@app.on_event("startup")` is acceptable; prefer lifespan for multi-step startup/shutdown.
 

@@ -4,7 +4,7 @@ Skills in this folder are **aligned with this repository**. When using any skill
 
 ## Repository context
 
-- **Python scope:** All Python lives under `backend/`, `logger/`, and `services/` (entire tree). Same style and standards everywhere.
+- **Python scope:** All Python lives under `backend/` and `services/` (entire tree). Same style and standards everywhere.
 - **Stack:** FastAPI, Pydantic v2, SQLModel (SQLAlchemy + Pydantic), PostgreSQL, Alembic. Async in the API path; sync only in Celery tasks and init. RabbitMQ for RPC/DLQ.
 - **No frontend:** API-only. Do not add UI, npm, or frontend tooling.
 - **Structure:** API endpoints in `backend/app/api/v1/endpoints/`, business logic in `backend/app/services/`, data access in `backend/app/repositories/`. See `.cursor/rules/project.md`.

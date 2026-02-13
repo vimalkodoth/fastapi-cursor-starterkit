@@ -1,6 +1,6 @@
 # Python 3.x style
 
-Python and FastAPI; no Flask. Applies to all services under `backend/`, `logger/`, `services/`.
+Python and FastAPI; no Flask. Applies to all services under `backend/`, `services/`.
 
 ## Project layout
 

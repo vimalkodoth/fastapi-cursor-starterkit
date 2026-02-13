@@ -10,14 +10,6 @@ services:
       - 5672:5672
       - 15672:15672
 
-  logger:
-    image: logger-service
-    build:
-      context: ./logger
-      dockerfile: Dockerfile
-    ports:
-      - 5001:5001
-
   api:
     image: fastapi-starter-api
     build:

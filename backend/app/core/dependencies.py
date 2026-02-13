@@ -50,9 +50,6 @@ def call_service_via_rabbitmq(
             host=os.getenv("RABBITMQ_HOST", "rabbitmq"),
             port=int(os.getenv("RABBITMQ_PORT", "5672")),
             service_name="api_sync",
-            logger_url=os.getenv(
-                "LOGGER_PRODUCER_URL", "http://logger:5001/api/v1/logger/log_producer"
-            ),
             on_log_event=_write_task_log_sync,
         )
 

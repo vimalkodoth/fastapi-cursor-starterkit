@@ -1,2 +1,7 @@
 kombu==5.3.4
 requests==2.25.1
+
+# OpenTelemetry (traces, logs -> OTLP collector -> SigNoz)
+opentelemetry-api>=1.28.0
+opentelemetry-sdk>=1.28.0
+opentelemetry-exporter-otlp-proto-grpc>=1.28.0

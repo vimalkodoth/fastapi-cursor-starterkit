@@ -3,7 +3,7 @@
 - **Backend (FastAPI):** `backend/` — main application. Entry: `main.py` (app is `main:app`).
 - **Layers:** Controllers in `backend/app/api/v1/endpoints/`, business logic in `backend/app/services/`, data access in `backend/app/repositories/`, infrastructure in `backend/app/infrastructure/`, Celery tasks in `backend/app/tasks/`, core config in `backend/app/core/`.
 - **CQRS:** Separate **commands** (writes) from **queries** (reads): use command services + write repositories for create/update/delete; use query services + read repositories for list/get. Endpoints inject the appropriate service. See **`.cursor/rules/cqrs.md`**.
-- **Other services:** `logger/`, `services/` (e.g. `services/dataservice/` and any new service under `services/`), `rabbitmq/` — separate deployables. Do not mix their code with `backend/`. New top-level Python services (same level as backend, logger, services): add to root `Makefile` `PYTHON_SERVICES` and to `.pre-commit-config.yaml` `files` regex.
+- **Other services:** `services/` (e.g. `services/dataservice/` and any new service under `services/`), `rabbitmq/` — separate deployables. Do not mix their code with `backend/`. New top-level Python services (same level as backend, services): add to root `Makefile` `PYTHON_SERVICES` and to `.pre-commit-config.yaml` `files` regex.
 - **Docs:** `docs/` (ARCHITECTURE.md, FLOW_EXAMPLE.md). Reference these for flows and patterns.
 
 ## Where to add code
@@ -23,7 +23,7 @@
 - Migrations: from `backend/`, `alembic upgrade head` or `alembic revision --autogenerate -m "description"`.
 - Tests: see `scripts/user-journey-tests.sh`, `scripts/test-async-flow.sh` for flows; prefer running tests after code changes.
 
-Do not invent new commands; use the above. Python scope for lint/format/check and pre-commit: **all services** — `backend/`, `logger/`, `services/` (entire tree; every service under it), and any other top-level Python service added to `Makefile` and pre-commit (same style and coding standards everywhere).
+Do not invent new commands; use the above. Python scope for lint/format/check and pre-commit: **all services** — `backend/`, `services/` (entire tree; every service under it), and any other top-level Python service added to `Makefile` and pre-commit (same style and coding standards everywhere).
 
 ## Rules in this folder
 

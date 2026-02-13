@@ -11,7 +11,7 @@ This document walks through **one example** for both the **synchronous** and **a
 }
 ```
 
-**Base URL (via Nginx):** `http://localhost:8080` → API at `http://api:8000`  
+**Base URL (via Nginx):** `http://localhost:8081` → API at `http://api:8000`  
 **API prefix:** `/api/v1`
 
 ---
@@ -121,7 +121,7 @@ Clients may send an optional **`Idempotency-Key`** header (e.g. a UUID) on `POST
 **Synchronous (wait for result):**
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/data/process \
+curl -X POST http://localhost:8081/api/v1/data/process \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: optional-uuid" \
   -d '{"payload": "hello world", "description": "uppercase"}'
@@ -132,13 +132,13 @@ curl -X POST http://localhost:8080/api/v1/data/process \
 
 ```bash
 # Start task
-curl -X POST http://localhost:8080/api/v1/data/process-async \
+curl -X POST http://localhost:8081/api/v1/data/process-async \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: optional-uuid" \
   -d '{"payload": "hello world", "description": "uppercase"}'
 # → 202 Accepted, body: {"task_id":"abc-123-...","task_status":"Processing","outcome":null}
 
 # Get result (use task_id from above)
-curl http://localhost:8080/api/v1/data/process-async/abc-123-def
+curl http://localhost:8081/api/v1/data/process-async/abc-123-def
 # → 202 if still processing, or 200 with outcome when done
 ```

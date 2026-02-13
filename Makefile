@@ -1,6 +1,6 @@
 # Format/lint/check all Python services. Run from repo root (uses backend venv when present).
 # Top-level dirs with Python: add any new service here and in .pre-commit-config.yaml.
-PYTHON_SERVICES = backend logger services
+PYTHON_SERVICES = backend services
 # Paths relative to backend/ for make -C backend (covers all of services/, including dataservice and any new subservices)
 PYTHON_DIRS = . $(addprefix ../,$(filter-out backend,$(PYTHON_SERVICES)))
 

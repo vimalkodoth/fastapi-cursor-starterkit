@@ -1,3 +1,5 @@
+# Host ports: 5432 postgres, 5672+15672 rabbitmq, 6379 redis, 8000 api, 8081 nginx, 4319+4320 otel-collector.
+# SigNoz (separate compose): 3301 UI, 4317+4318 signoz-otel-collector — no overlap.
 services:
   rabbitmq:
     image: rabbitmq-service
@@ -20,16 +22,20 @@ services:
       - network1
     restart: always
 
-  logger:
-    image: logger-service
-    build:
-      context: ./logger
-      dockerfile: Dockerfile
-    container_name: logger-service
+  # OpenTelemetry Collector: receives OTLP from apps, exports to SigNoz.
+  # Host ports 4319/4320 to avoid conflict with SigNoz's signoz-otel-collector (4317/4318).
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.130.0
+    container_name: otel-collector
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    volumes:
+      - ./observability/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
     ports:
-      - 5001:5001
+      - "4319:4317"
+      - "4320:4318"
     networks:
       - network1
+    restart: on-failure
 
   # PostgreSQL Database
   postgres:
@@ -77,16 +83,19 @@ services:
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
-      - LOGGER_PRODUCER_URL=http://logger:5001/api/v1/logger/log_producer
       - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
       - RABBITMQ_USER=guest
       - RABBITMQ_PASSWORD=welcome1
       - DATA_QUEUE_NAME=data_queue
       - DATABASE_URL=postgresql://fastapi:fastapi@postgres:5432/fastapi_db
-      # Async DB URL (optional; defaults to DATABASE_URL with asyncpg driver)
       - ASYNC_DATABASE_URL=postgresql+asyncpg://fastapi:fastapi@postgres:5432/fastapi_db
       - PYTHONPATH=/app
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_SERVICE_NAME=fastapi-api
+      - OTEL_TRACES_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=otlp
+      - OTEL_LOGS_EXPORTER=otlp
     networks:
       - network1
     depends_on:
@@ -96,7 +105,7 @@ services:
         condition: service_started
       rabbitmq:
         condition: service_started
-      logger:
+      otel-collector:
         condition: service_started
       data-service:
         condition: service_started
@@ -113,7 +122,6 @@ services:
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
-      - LOGGER_PRODUCER_URL=http://logger:5001/api/v1/logger/log_producer
       - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
       - RABBITMQ_USER=guest
@@ -121,6 +129,11 @@ services:
       - DATA_QUEUE_NAME=data_queue
       - DATABASE_URL=postgresql://fastapi:fastapi@postgres:5432/fastapi_db
       - PYTHONPATH=/app
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_SERVICE_NAME=fastapi-celery-worker
+      - OTEL_TRACES_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=otlp
+      - OTEL_LOGS_EXPORTER=otlp
     networks:
       - network1
     depends_on:
@@ -130,7 +143,7 @@ services:
         condition: service_started
       rabbitmq:
         condition: service_started
-      logger:
+      otel-collector:
         condition: service_started
       api:
         condition: service_started
@@ -147,25 +160,28 @@ services:
     container_name: data-service
     environment:
       - PYTHONUNBUFFERED=1
-      - LOGGER_RECEIVER_URL=http://logger:5001/api/v1/logger/log_receiver
       - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
       - RABBITMQ_USER=guest
       - RABBITMQ_PASSWORD=welcome1
       - QUEUE_NAME=data_queue
       - SERVICE_NAME=data
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_SERVICE_NAME=data-service
+      - OTEL_TRACES_EXPORTER=otlp
+      - OTEL_LOGS_EXPORTER=otlp
     networks:
       - network1
     depends_on:
       - rabbitmq
-      - logger
+      - otel-collector
     restart: on-failure
 
 
   nginx:
     image: nginx:latest
     ports:
-      - "8080:8080"
+      - "8081:8080"   # 8081 to avoid conflict with SigNoz UI (8080)
     volumes:
       - ./nginx_config.conf:/etc/nginx/conf.d/default.conf
     networks:

@@ -20,7 +20,7 @@ To run all services, see the main [README](../README.md).
    pip install -r requirements.txt
    ```
 
-2. Ensure PostgreSQL, Redis, and RabbitMQ are running (e.g. via `docker compose up -d postgres redis rabbitmq logger data-service`).
+2. Ensure PostgreSQL, Redis, and RabbitMQ are running (e.g. via `docker compose up -d postgres redis rabbitmq data-service`).
 
 3. Start FastAPI:
 
@@ -93,7 +93,6 @@ Scripts and manifests use the `fastapi-starter` namespace. Backend manifests (e.
 - `CELERY_BROKER_URL` - Redis broker (default: `redis://redis:6379/0`)
 - `CELERY_RESULT_BACKEND` - Redis result backend (default: `redis://redis:6379/0`)
 - `IDEMPOTENCY_REDIS_URL` - Optional; Redis URL for idempotency store (defaults to `CELERY_BROKER_URL`). TTL 1h.
-- `LOGGER_PRODUCER_URL` - Logger service URL for producer events
 - `RABBITMQ_HOST`, `RABBITMQ_PORT`, `RABBITMQ_USER`, `RABBITMQ_PASSWORD`
 - `DATA_QUEUE_NAME` - Queue name for data service (default: `data_queue`)
 

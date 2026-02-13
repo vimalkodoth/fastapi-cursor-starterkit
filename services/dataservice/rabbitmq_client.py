@@ -5,11 +5,26 @@ Uses a Dead Letter Exchange (DLX) and Dead Letter Queue (DLQ): failed messages
 are nack'd with requeue=False and routed to the DLQ for inspection/retry.
 """
 import json
-from typing import Callable, Optional
+from contextlib import nullcontext
+from typing import Callable
 
-import requests
 from kombu import Connection, Exchange, Producer, Queue
 from kombu.mixins import ConsumerMixin
+
+_null_context = nullcontext
+
+
+def _get_tracer_none(*_a, **_k):
+    return None
+
+
+try:
+    from app.observability import emit_log as _otel_emit_log
+    from app.observability import extract_trace_context, get_tracer
+except ImportError:
+    _otel_emit_log = None
+    extract_trace_context = None
+    get_tracer = _get_tracer_none
 
 # Dead letter: exchange and queue names (suffix to main queue name)
 DLX_SUFFIX = "_dlx"
@@ -30,7 +45,6 @@ class EventReceiver(ConsumerMixin):
         queue_name: str,
         service: Callable,
         service_name: str,
-        logger_url: Optional[str] = None,
     ):
         """
         Initialize EventReceiver with kombu.
@@ -43,12 +57,10 @@ class EventReceiver(ConsumerMixin):
             queue_name: Name of the queue to listen to
             service: Service class that processes messages
             service_name: Name of the service
-            logger_url: Optional logger service URL for observability
         """
         self.service_worker = service
         self.service_name = service_name
         self.queue_name = queue_name
-        self.logger_url = logger_url
 
         # Create connection
         connection_url = f"amqp://{username}:{password}@{host}:{port}//"
@@ -85,6 +97,17 @@ class EventReceiver(ConsumerMixin):
             )
         ]
 
+    def _headers_carrier(self, message):
+        """Build a string-keyed dict from message headers for trace context extraction."""
+        headers = (
+            getattr(message, "headers", None)
+            or message.properties.get("application_headers")
+            or {}
+        )
+        if not isinstance(headers, dict):
+            return {}
+        return {str(k): str(v) for k, v in headers.items() if v is not None}
+
     def on_request(self, body, message):
         """Handle incoming message."""
         service_instance = self.service_worker()
@@ -92,31 +115,71 @@ class EventReceiver(ConsumerMixin):
 
         self._log_event(correlation_id, "start", "-")
 
-        try:
-            # Process message - convert body to string if needed
-            if isinstance(body, dict):
-                body_str = json.dumps(body)
-            elif isinstance(body, bytes):
-                body_str = body.decode("utf-8")
-            else:
-                body_str = str(body)
-
-            response, task_type = service_instance.call(body_str)
-
-            # Send response
-            producer = Producer(message.channel)
-            producer.publish(
-                response,
-                exchange="",
-                routing_key=message.properties.get("reply_to"),
-                correlation_id=correlation_id,
-                serializer="json",
-                retry=True,
+        tracer = get_tracer(__name__, "1.0.0") if callable(get_tracer) else None
+        carrier = self._headers_carrier(message)
+        remote_ctx = (
+            extract_trace_context(carrier) if callable(extract_trace_context) else None
+        )
+        if tracer and remote_ctx is not None:
+            span_ctx = tracer.start_as_current_span(
+                "message.process", context=remote_ctx
             )
+        elif tracer:
+            span_ctx = tracer.start_as_current_span("message.process")
+        else:
+            span_ctx = _null_context()
+        try:
+            with span_ctx:
+                # Process message - convert body to string if needed
+                if isinstance(body, dict):
+                    body_str = json.dumps(body)
+                elif isinstance(body, bytes):
+                    body_str = body.decode("utf-8")
+                else:
+                    body_str = str(body)
 
-            message.ack()
-            self._log_event(correlation_id, "end", "-")
-            print(f"Processed request: {task_type}")
+                if _otel_emit_log is not None:
+                    try:
+                        _otel_emit_log(
+                            "data-service processing start",
+                            attributes={
+                                "layer": "dataservice",
+                                "correlation_id": correlation_id,
+                                "queue_name": self.queue_name,
+                            },
+                        )
+                    except Exception:
+                        pass
+
+                response, task_type = service_instance.call(body_str)
+
+                if _otel_emit_log is not None:
+                    try:
+                        _otel_emit_log(
+                            "data-service processing end",
+                            attributes={
+                                "layer": "dataservice",
+                                "correlation_id": correlation_id,
+                                "task_type": task_type,
+                            },
+                        )
+                    except Exception:
+                        pass
+
+                # Send response
+                producer = Producer(message.channel)
+                producer.publish(
+                    response,
+                    exchange="",
+                    routing_key=message.properties.get("reply_to"),
+                    correlation_id=correlation_id,
+                    serializer="json",
+                    retry=True,
+                )
+
+                message.ack()
+                self._log_event(correlation_id, "end", "-")
+                print(f"Processed request: {task_type}")
 
         except Exception as e:
             response = {
@@ -140,17 +203,20 @@ class EventReceiver(ConsumerMixin):
             # Reject so message is dead-lettered to DLQ for inspection/retry
             message.reject(requeue=False)
 
-    def _log_event(self, correlation_id: str, task_type: str, description: str):
-        """Log event to logger service if available."""
-        if self.logger_url:
-            params = {
-                "correlation_id": correlation_id,
-                "queue_name": self.queue_name,
-                "service_name": self.service_name,
-                "task_type": task_type,
-                "description": description,
-            }
+    def _log_event(self, correlation_id: str, status: str, description: str):
+        """Emit OTel log when enabled (receiver lifecycle: start/end). Includes trace_id from current span."""
+        if _otel_emit_log is not None:
             try:
-                requests.post(self.logger_url, json=params, timeout=1)
-            except requests.exceptions.RequestException:
-                pass  # Logger service unavailable, continue silently
+                _otel_emit_log(
+                    body=f"receiver {status}",
+                    attributes={
+                        "layer": "receiver",
+                        "correlation_id": correlation_id,
+                        "queue_name": self.queue_name,
+                        "service_name": self.service_name,
+                        "status": status,
+                        "description": description,
+                    },
+                )
+            except Exception:
+                pass

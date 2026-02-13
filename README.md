@@ -38,15 +38,17 @@ cd fastapi-cursor-starterkit
 docker compose up -d
 ```
 
-| Service | URL |
-|--------|-----|
+| Service | URL / Port |
+|--------|-------------|
 | **API** | http://localhost:8000 |
 | **API docs (Swagger)** | http://localhost:8000/api/v1/docs |
 | **API docs (ReDoc)** | http://localhost:8000/api/v1/redoc |
 | **Metrics** | http://localhost:8000/api/v1/metrics |
-| **Gateway (Nginx)** | http://localhost:8080 |
+| **Gateway (Nginx)** | http://localhost:8081 |
 | **RabbitMQ Management** | http://localhost:15672 (guest / welcome1) |
-| **Logger** | http://localhost:5001 |
+| **SigNoz (observability)** | Run separately; UI at http://localhost:3301 — see `observability/README.md` |
+
+**Host ports (main stack):** 5432 postgres, 5672/15672 rabbitmq, 6379 redis, 8000 api, 8081 nginx, 4319/4320 otel-collector (gRPC/HTTP). SigNoz stack uses 3301 (UI), 4317/4318 (signoz-otel-collector).
 
 ```bash
 # Logs
@@ -92,7 +94,7 @@ Ref: [Cursor – Best practices for coding with agents](https://cursor.com/blog/
 │   │   └── infrastructure/  # RabbitMQ, Celery
 │   └── main.py
 ├── services/dataservice/    # Example microservice (RabbitMQ consumer)
-├── logger/                  # Event / observability service
+├── observability/           # OTel Collector config (traces/metrics/logs → SigNoz)
 ├── docs/                    # ARCHITECTURE, flows, sequence diagrams
 ├── docker-compose.yml
 └── .cursor/                 # Rules + commands for AI-assisted dev
@@ -105,7 +107,7 @@ New API routes → `backend/app/api/v1/endpoints/`. New logic → `services/` or
 ## Code quality
 
 - **Tools:** Black, isort, flake8, mypy; pre-commit hooks.
-- **Scope:** All Python services: `backend/`, `logger/`, `services/` (entire tree), and any other top-level service added to the root Makefile. Same style and standards everywhere.
+- **Scope:** All Python services: `backend/`, `services/` (entire tree), and any other top-level service added to the root Makefile. Same style and standards everywhere.
 
 ```bash
 # From repo root
@@ -151,6 +153,8 @@ Optional **`Idempotency-Key`** header on both POST data endpoints (Redis, 1h TTL
 | Doc | Description |
 |-----|-------------|
 | [ARCHITECTURE.md](./docs/ARCHITECTURE.md) | System design, components, flows |
+| [OBSERVABILITY_PLAN.md](./docs/OBSERVABILITY_PLAN.md) | Observability (OTel, Collector, SigNoz) |
+| [observability/README.md](./observability/README.md) | OTel Collector config and running SigNoz |
 | [FLOW_EXAMPLE.md](./docs/FLOW_EXAMPLE.md) | Sync vs async processing walkthrough |
 | [SEQUENCE-DIAGRAMS.md](./docs/SEQUENCE-DIAGRAMS.md) | Use-case sequence diagrams |
 | [backend/alembic/README.md](./backend/alembic/README.md) | Migrations (DB name **fastapi_db**) |
@@ -166,6 +170,7 @@ Optional **`Idempotency-Key`** header on both POST data endpoints (Redis, 1h TTL
 - **PostgreSQL** — Database  
 - **Celery** + **Redis** — Async task queue and result backend  
 - **RabbitMQ** + **kombu** — RPC and DLQ  
+- **OpenTelemetry** + **SigNoz** — Traces, metrics, logs (see `observability/README.md`)  
 - **Docker Compose** — Local dev; Kubernetes configs included  
 
 ---

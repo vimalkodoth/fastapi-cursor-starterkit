@@ -10,7 +10,7 @@ This is a production-ready FastAPI starter kit designed for large-scale applicat
 - RESTful API with FastAPI (API-only, no frontend)
 - Asynchronous task processing with Celery
 - Microservices communication via RabbitMQ (RPC pattern)
-- Observability with dedicated logger service
+- Observability with OpenTelemetry and SigNoz
 - Docker Compose for local development
 - Kubernetes-ready deployment configurations
 
@@ -28,7 +28,7 @@ This is a production-ready FastAPI starter kit designed for large-scale applicat
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                        GATEWAY LAYER                                    │
 │                            Nginx                                        │
-│                    Reverse Proxy (Port 8080)                           │
+│                    Reverse Proxy (Host 8081)                           │
 │                    - Request Routing                                    │
 │                    - Load Balancing (when scaled)                      │
 └──────────────────────────────┬────────────────────────────────────────┘
@@ -111,9 +111,8 @@ This is a production-ready FastAPI starter kit designed for large-scale applicat
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                    OBSERVABILITY LAYER                                 │
 │  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │  Logger Service (Port 5001)                                     │  │
-│  │  - Logs producer events                                         │  │
-│  │  - Logs receiver events                                          │  │
+│  │  OTel Collector (4317/4318) → SigNoz (run separately)             │  │
+│  │  - Traces, metrics, logs via OTLP                               │  │
 │  │  - Tracks correlation IDs                                        │  │
 │  │  - Event tracking for debugging                                  │  │
 │  └──────────────────────────────────────────────────────────────────┘  │
@@ -256,58 +255,17 @@ This is a production-ready FastAPI starter kit designed for large-scale applicat
 - Container: `redis`
 - Image: `redis:7-alpine`
 
-### 7. Logger Service (`logger/`)
+### 7. Observability (OpenTelemetry + SigNoz)
 
-**Technology:** FastAPI, Python 3.x
+**Technology:** OpenTelemetry (OTel) in API, Celery, Data service; OTel Collector; SigNoz.
 
 **Responsibilities:**
-- Log producer events (when messages are sent)
-- Log receiver events (when messages are received)
-- Track correlation IDs for request tracing
-- Provide observability across services
+- Traces, metrics, and logs exported via OTLP to the Collector, then to SigNoz
+- See `observability/README.md` and `docs/OBSERVABILITY_PLAN.md`. Logger service removed.
 
-**Endpoints:**
-- `POST /api/v1/logger/log_producer` - Log producer events
-- `POST /api/v1/logger/log_receiver` - Log receiver events
-- `GET /api/v1/logger/` - Health check
+**Components:** OTel Collector (see docker-compose `otel-collector`); SigNoz run separately. Env: `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_SERVICE_NAME`.
 
-**Container:**
-- Container name: `logger-service`
-- Image: `logger-service`
-- Port: 5001
-
-#### How the logging component works (observability)
-
-The logger is a **dedicated HTTP service** that other services call to record **producer** and **receiver** events around RabbitMQ message flow. It provides **request tracing** and a single place to see message flow; it is the starter kit’s **observability foundation**.
-
-**1. Who sends events**
-
-| Component | Sends to | When |
-|-----------|----------|------|
-| **API (sync)** | `POST …/log_producer` | When calling Data Service via RabbitMQ: before publish ("start"), after response or error ("end"). |
-| **Celery worker** | `POST …/log_producer` | Same: "start" when publishing to `data_queue`, "end" when reply received or on error. |
-| **Data Service** | `POST …/log_receiver` | When a message is received ("start") and when processing finishes or fails ("end"). |
-
-**2. What is sent (payload)**
-
-Every event includes:
-
-- **correlation_id** – Same UUID for the whole request; used to trace one message from producer → receiver → back.
-- **queue_name** – e.g. `data_queue`.
-- **service_name** – Who is logging (e.g. `api_sync`, `api_celery_worker`, `data`).
-- **task_type** – `"start"` or `"end"` (and for errors, description carries the error message).
-- **description** – Optional text (e.g. `"-"` or error details).
-
-**3. How it’s achieved**
-
-- **Backend (API + Celery):** `EventProducer` in `app.infrastructure.rabbitmq` is built with `logger_url=LOGGER_PRODUCER_URL`. Its `_log_event()` does a non-blocking `requests.post(logger_url, json={...}, timeout=1)` for each "start" and "end". Same pattern in `app.core.dependencies` when creating the producer for sync calls.
-- **Data Service:** Uses its own RabbitMQ client (e.g. `rabbitmq_client.py`) with `logger_url=LOGGER_RECEIVER_URL` and posts to `…/log_receiver` on receive and on completion/error.
-- **Logger service:** FastAPI app in `logger/` exposes `log_producer` and `log_receiver`. Each endpoint accepts the JSON body, returns 202 immediately, and runs the actual logging in a **background task** (so callers are not blocked). Today the handler just **prints** the event (e.g. to stdout); in Docker/Kubernetes you see it with `docker logs` / `kubectl logs`.
-
-**4. Is it distributed tracing?**
-
-- **Yes.** The **correlation_id** is generated once per request (in the producer), carried in the RabbitMQ message, and logged by both producer and receiver with the same ID. That lets you **trace one request across service boundaries** (API/Celery → RabbitMQ → Data Service → back). So the starter kit **does** have distributed tracing: correlation-based, request-scoped tracing across the messaging path.
-- **What we don’t have** is a *standard tracing format* (e.g. W3C Trace Context, OpenTelemetry) or tooling like Jaeger/Zipkin (spans, sampling, dashboards). You could add OpenTelemetry later and keep using the same correlation_id as the trace ID, or propagate trace/span IDs in headers alongside it.
+The former **logger** HTTP service has been **removed**. Observability is via **OpenTelemetry** (traces, metrics, logs) to the OTel Collector and SigNoz. See `observability/README.md`.
 
 ### 8. Nginx (`nginx`)
 
@@ -319,7 +277,7 @@ Every event includes:
 - Request routing
 
 **Configuration:**
-- Port: 8080
+- Host port: 8081 (container listens 8080)
 - Routes to: FastAPI API (port 8000)
 - Paths: `/api/v1/` and `/` (root)
 - Proxy headers: Host, X-Real-IP, X-Forwarded-For, X-Forwarded-Proto
@@ -498,16 +456,14 @@ docker-compose down
 - API: http://localhost:8000
 - Swagger UI: http://localhost:8000/api/v1/docs (interactive - can test endpoints)
 - ReDoc: http://localhost:8000/api/v1/redoc (clean documentation view)
-- Nginx Gateway: http://localhost:8080
+- Nginx Gateway: http://localhost:8081
 - PostgreSQL: localhost:5432, database **fastapi_db** (user fastapi)
 - RabbitMQ Management: http://localhost:15672 (guest/welcome1)
-- Logger: http://localhost:5001
 
 **Container Names:**
 - `fastapi-api` - FastAPI application
 - `fastapi-celery-worker` - Celery worker
 - `data-service` - Data processing microservice
-- `logger-service` - Logger service
 - `rabbitmq-service` - RabbitMQ message broker
 - `postgres` - PostgreSQL database
 - `redis` - Redis for Celery
@@ -518,7 +474,6 @@ See `kubectl-setup.sh` for Kubernetes deployment instructions.
 
 **Components:**
 - RabbitMQ StatefulSet (in `rabbitmq/` directory)
-- Logger Deployment (`logger/logger-pod.yaml`)
 - Backend Deployment (`backend/backend-pod.yaml` - to be created)
 - Backend Celery Deployment (`backend/backend-celery-pod.yaml` - to be created)
 - Backend Ingress (`backend/backend-ingress.yaml` - to be created)
@@ -531,7 +486,6 @@ See `kubectl-setup.sh` for Kubernetes deployment instructions.
 #### API Service
 - `CELERY_BROKER_URL` - Redis broker URL (default: `redis://redis:6379/0`)
 - `CELERY_RESULT_BACKEND` - Redis result backend (default: `redis://redis:6379/0`)
-- `LOGGER_PRODUCER_URL` - Logger service URL
 - `RABBITMQ_HOST` - RabbitMQ host (default: `rabbitmq`)
 - `RABBITMQ_PORT` - RabbitMQ port (default: `5672`)
 - `RABBITMQ_USER` - RabbitMQ username (default: `guest`)
@@ -539,7 +493,6 @@ See `kubectl-setup.sh` for Kubernetes deployment instructions.
 - `DATA_QUEUE_NAME` - Data service queue name (default: `data_queue`)
 
 #### Data Service
-- `LOGGER_RECEIVER_URL` - Logger service URL
 - `RABBITMQ_HOST` - RabbitMQ host
 - `RABBITMQ_PORT` - RabbitMQ port
 - `RABBITMQ_USER` - RabbitMQ username
@@ -577,7 +530,7 @@ See `kubectl-setup.sh` for Kubernetes deployment instructions.
 
 ## Monitoring and Observability
 
-1. **Logger Service**: Tracks all producer/receiver events
+1. **OpenTelemetry + SigNoz**: Traces, metrics, logs (see `observability/README.md`)
 2. **Health Checks**: `/health` endpoint for service health
 3. **OpenAPI Docs**: Auto-generated API documentation
 4. **Logging**: Structured logging across all services
@@ -612,8 +565,6 @@ To add a new microservice:
        queue_name=os.getenv('QUEUE_NAME', 'your_service_queue'),
        service=YourService,
        service_name=os.getenv('SERVICE_NAME', 'your_service'),
-       logger_url=os.getenv('LOGGER_RECEIVER_URL', 
-                           'http://logger:5001/api/v1/logger/log_receiver')
    )
    event_receiver.run()
    ```
@@ -632,12 +583,13 @@ To add a new microservice:
        - RABBITMQ_PASSWORD=welcome1
        - QUEUE_NAME=your_service_queue
        - SERVICE_NAME=your_service
-       - LOGGER_RECEIVER_URL=http://logger:5001/api/v1/logger/log_receiver
+       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+       - OTEL_SERVICE_NAME=your-service
      networks:
        - network1
      depends_on:
        - rabbitmq
-       - logger
+       - otel-collector
    ```
 5. Create API endpoint in `backend/app/api/v1/endpoints/your_service.py`:
    ```python
@@ -705,10 +657,6 @@ To add a new microservice:
 │       ├── rabbitmq_client.py   # RabbitMQ EventReceiver
 │       ├── Dockerfile
 │       └── requirements.txt
-├── logger/                      # Logger service
-│   ├── api/                     # Logger API (router, models, logger)
-│   ├── endpoint.py             # FastAPI entry point
-│   └── logger-pod.yaml         # Kubernetes deployment
 ├── rabbitmq/                    # RabbitMQ configuration
 │   ├── Dockerfile
 │   └── *.yaml                  # Kubernetes configs
@@ -805,7 +753,7 @@ make install-dev
 5. **RPC Pattern**: Synchronous service calls using RabbitMQ RPC pattern
 6. **Celery for Async**: Asynchronous processing using Celery with Redis
 7. **Microservices**: Modular service architecture for scalability
-8. **Observability**: Dedicated logger service for event tracking
+8. **Observability**: OpenTelemetry (OTel) and SigNoz for traces, metrics, logs
 9. **No Skipper Dependencies**: Removed all Skipper-specific code and dependencies
 
 ## Database Layer

@@ -156,3 +156,4 @@ alembic/versions/*.pyc
 *.tmp
 *.bak
 *.swp
+observability/signoz/

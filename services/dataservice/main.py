@@ -3,6 +3,10 @@ import os
 from rabbitmq_client import EventReceiver
 
 from app.data_service import DataService
+from app.observability import init_observability
+
+# OpenTelemetry: traces and logs to otel-collector (no-op if OTEL_EXPORTER_OTLP_ENDPOINT unset)
+init_observability()
 
 
 def main():
@@ -14,9 +18,6 @@ def main():
         queue_name=os.getenv("QUEUE_NAME", "data_queue"),
         service=DataService,
         service_name=os.getenv("SERVICE_NAME", "data"),
-        logger_url=os.getenv(
-            "LOGGER_RECEIVER_URL", "http://logger:5001/api/v1/logger/log_receiver"
-        ),
     )
     # Start consuming messages (ConsumerMixin.run() starts the consumer loop)
     event_receiver.run()

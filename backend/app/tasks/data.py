@@ -13,6 +13,7 @@ from app.core.database import engine
 from app.infrastructure.celery import app
 from app.infrastructure.rabbitmq import EventProducer
 from app.models.database import DataProcessingRecord
+from app.observability import emit_log
 
 # Create logger - enable to display messages on task logger
 celery_log = get_task_logger(__name__)
@@ -49,9 +50,21 @@ def process_data_task(payload: str) -> Dict[str, Any]:
     Persists a record to PostgreSQL on success or failure (async path integration).
     """
     payload_json = json.loads(payload)
+    payload_json.pop(
+        "_trace_context", None
+    )  # trace context already applied in task_prerun
     task_id = str(current_task.request.id)
     payload_str = str(payload_json.get("payload", payload))
     description = payload_json.get("description")
+
+    emit_log(
+        "celery task start",
+        attributes={
+            "layer": "celery",
+            "task_id": task_id,
+            "task_name": "process_data_task",
+        },
+    )
 
     # Queue name for data service
     queue_name = os.getenv("DATA_QUEUE_NAME", "data_queue")
@@ -63,9 +76,6 @@ def process_data_task(payload: str) -> Dict[str, Any]:
             host=os.getenv("RABBITMQ_HOST", "rabbitmq"),
             port=int(os.getenv("RABBITMQ_PORT", "5672")),
             service_name="api_celery_worker",
-            logger_url=os.getenv(
-                "LOGGER_PRODUCER_URL", "http://logger:5001/api/v1/logger/log_producer"
-            ),
         )
 
         # Send message to RabbitMQ queue and wait for response
@@ -85,10 +95,23 @@ def process_data_task(payload: str) -> Dict[str, Any]:
             ),
         )
 
+        emit_log(
+            "celery task end",
+            attributes={"layer": "celery", "task_id": task_id, "status": "success"},
+        )
         celery_log.info("Data processing task completed")
         return response_json
 
     except Exception as e:
+        emit_log(
+            "celery task end",
+            attributes={
+                "layer": "celery",
+                "task_id": task_id,
+                "status": "failed",
+                "error": str(e),
+            },
+        )
         celery_log.error("Data processing task failed: %s", str(e))
         error_payload = {"error": f"Data processing failed: {str(e)}"}
         # Persist failure record to DB for integration visibility
@@ -116,9 +139,6 @@ def process_generic_task(queue_name: str, payload: str) -> Dict[str, Any]:
             host=os.getenv("RABBITMQ_HOST", "rabbitmq"),
             port=int(os.getenv("RABBITMQ_PORT", "5672")),
             service_name="api_celery_worker",
-            logger_url=os.getenv(
-                "LOGGER_PRODUCER_URL", "http://logger:5001/api/v1/logger/log_producer"
-            ),
         )
 
         response = event_producer.call(queue_name, json.dumps(payload_json))

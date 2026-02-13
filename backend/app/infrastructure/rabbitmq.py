@@ -18,11 +18,17 @@ import time
 import uuid
 from typing import Callable, Optional
 
-import requests
 from kombu import Connection, Consumer, Exchange, Producer, Queue
 from kombu.mixins import ConsumerMixin
 
 from app.core.metrics import record_rpc_latency, record_rpc_timeout
+
+try:
+    from app.observability import emit_log as _otel_emit_log
+    from app.observability import inject_trace_context
+except ImportError:
+    _otel_emit_log = None
+    inject_trace_context = None
 
 # Dead letter: exchange and queue name suffixes (main queue + suffix)
 _DLX_SUFFIX = "_dlx"
@@ -42,7 +48,6 @@ class EventProducer:
         host: str,
         port: int,
         service_name: str,
-        logger_url: Optional[str] = None,
         on_log_event: Optional[
             Callable[
                 [str, str, str, str, str, str],
@@ -59,12 +64,10 @@ class EventProducer:
             host: RabbitMQ host
             port: RabbitMQ port
             service_name: Name of the service using this producer
-            logger_url: Optional logger service URL for observability
             on_log_event: Optional callback (correlation_id, queue_name, service_name,
                 status, description, task_type) to e.g. persist to task_logs
         """
         self.service_name = service_name
-        self.logger_url = logger_url
         self.on_log_event = on_log_event
 
         # Create connection URL
@@ -129,6 +132,14 @@ class EventProducer:
 
             self._log_event(corr_id, queue_name, "start", "-", task_type)
 
+            # Propagate trace context so downstream (e.g. data-service) continues the same trace
+            headers = {}
+            if inject_trace_context is not None:
+                try:
+                    inject_trace_context(headers)
+                except Exception:
+                    pass
+
             # Publish message
             producer = Producer(channel)
             producer.publish(
@@ -139,6 +150,7 @@ class EventProducer:
                 correlation_id=corr_id,
                 serializer="json",
                 retry=True,
+                headers=headers,
             )
 
             # Wait for response
@@ -189,19 +201,7 @@ class EventProducer:
         description: str,
         task_type: str = "data",
     ):
-        """Log event to logger service and optional DB callback."""
-        if self.logger_url:
-            params = {
-                "correlation_id": correlation_id,
-                "queue_name": queue_name,
-                "service_name": self.service_name,
-                "task_type": status,
-                "description": description,
-            }
-            try:
-                requests.post(self.logger_url, json=params, timeout=1)
-            except requests.exceptions.RequestException:
-                pass  # Logger service unavailable, continue silently
+        """Invoke optional DB callback (e.g. persist to task_logs). Emit OTel log when enabled."""
         if self.on_log_event:
             try:
                 self.on_log_event(
@@ -214,6 +214,22 @@ class EventProducer:
                 )
             except Exception:
                 pass  # Don't fail RPC on log write failure
+        if _otel_emit_log is not None:
+            try:
+                _otel_emit_log(
+                    body=f"rpc {status}",
+                    attributes={
+                        "layer": "rpc",
+                        "correlation_id": correlation_id,
+                        "queue_name": queue_name,
+                        "service_name": self.service_name,
+                        "status": status,
+                        "description": description,
+                        "task_type": task_type,
+                    },
+                )
+            except Exception:
+                pass
 
     def close(self):
         """Close connection."""
@@ -235,7 +251,6 @@ class EventReceiver(ConsumerMixin):
         queue_name: str,
         service: Callable,
         service_name: str,
-        logger_url: Optional[str] = None,
     ):
         """
         Initialize EventReceiver with kombu.
@@ -248,12 +263,10 @@ class EventReceiver(ConsumerMixin):
             queue_name: Name of the queue to listen to
             service: Service class that processes messages
             service_name: Name of the service
-            logger_url: Optional logger service URL for observability
         """
         self.service_worker = service
         self.service_name = service_name
         self.queue_name = queue_name
-        self.logger_url = logger_url
 
         # Create connection
         connection_url = f"amqp://{username}:{password}@{host}:{port}//"
@@ -344,16 +357,5 @@ class EventReceiver(ConsumerMixin):
             message.reject(requeue=False)
 
     def _log_event(self, correlation_id: str, task_type: str, description: str):
-        """Log event to logger service if available."""
-        if self.logger_url:
-            params = {
-                "correlation_id": correlation_id,
-                "queue_name": self.queue_name,
-                "service_name": self.service_name,
-                "task_type": task_type,
-                "description": description,
-            }
-            try:
-                requests.post(self.logger_url, json=params, timeout=1)
-            except requests.exceptions.RequestException:
-                pass  # Logger service unavailable, continue silently
+        """Placeholder for observability (use OTel in data service for traces/logs)."""
+        pass
