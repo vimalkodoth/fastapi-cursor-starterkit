@@ -70,6 +70,14 @@ def _propagate_trace_context_to_request(sender, task_id, args, kwargs, **extra):
     traceparent = carrier.get(_TRACEPARENT) or carrier.get("traceparent")
     tracestate = carrier.get(_TRACESTATE) or carrier.get("tracestate")
     if traceparent:
-        setattr(request, _TRACEPARENT, traceparent if isinstance(traceparent, str) else str(traceparent))
+        setattr(
+            request,
+            _TRACEPARENT,
+            traceparent if isinstance(traceparent, str) else str(traceparent),
+        )
     if tracestate:
-        setattr(request, _TRACESTATE, tracestate if isinstance(tracestate, str) else str(tracestate))
+        setattr(
+            request,
+            _TRACESTATE,
+            tracestate if isinstance(tracestate, str) else str(tracestate),
+        )
