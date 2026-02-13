@@ -19,3 +19,5 @@
 - Do not change the database name from **fastapi_db** in config or migrations.
 - Do not remove or bypass pre-commit hooks or make targets for format/lint; they apply to all services.
 - Do not ack failed messages in RabbitMQ consumers; use `reject(requeue=False)` so they go to the DLQ.
+- Do not put imports inside functions, classes, or after executable code; all imports at top of file, ordered: standard library → third-party → project. See `.cursor/rules/imports.md`.
+- Do not implement workarounds or suboptimal solutions as the primary fix without warning the developer and getting explicit acceptance. If no proper solution exists, say so and do not implement a hack by default. See `.cursor/rules/ai-solution-quality.md` and `docs/AI_CODING_STANDARDS.md`.

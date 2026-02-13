@@ -28,6 +28,8 @@ Do not invent new commands; use the above. Python scope for lint/format/check an
 ## Rules in this folder
 
 - **project.md** (this file), **commands-and-workflow.md**, **standards.md** — project structure, commands, and enforced patterns.
+- **imports.md** — All imports at top of file only; order: standard library → third-party → project. No mid-file imports. See also `make format` (isort).
+- **ai-solution-quality.md** — AI must produce optimal solutions, no workarounds; warn developer and ask for acceptance before suboptimal or risky approaches; do not implement hacks without explicit confirmation. See **`docs/AI_CODING_STANDARDS.md`** for the plan.
 - **cqrs.md** — CQRS: separate command (write) and query (read) services and repositories; use when adding or changing API features.
 - **fastapi-python-best-practices.md** — project-specific FastAPI and Python; **fastapi-patterns.md** — general FastAPI patterns.
 - **python-style.md** — Python 3.x style; **clean-code.md** — clean code; **error-handling.md** — error handling; **code-quality.md** — edit/change guidelines.
@@ -35,4 +37,4 @@ Do not invent new commands; use the above. Python scope for lint/format/check an
 
 ## Agent skills
 
-For **agent skills** (fastapi-best-practices, **cqrs-pattern**, python-anti-patterns, python-design-patterns, python-testing-patterns, python-performance-optimization) under `.agents/skills/`, see **`.agents/skills/README.md`** for alignment with this project, these rules, and Cursor commands. **fastapi-best-practices** is the team skill for FastAPI standards; **cqrs-pattern** is the team skill for CQRS (command/query separation) when building API features.
+For **agent skills** under `.agents/skills/`, see **`.agents/skills/README.md`** for alignment with this project and Cursor rules. Key skills: **fastapi-best-practices** (FastAPI standards), **cqrs-pattern** (CQRS for API features), **ai-solution-quality** (optimal solutions, no workarounds, risk communication when using AI), python-anti-patterns, python-design-patterns, python-testing-patterns, python-performance-optimization.

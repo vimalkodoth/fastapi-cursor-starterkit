@@ -11,6 +11,7 @@ Python and FastAPI; no Flask. Applies to all services under `backend/`, `service
 
 - **Black** for formatting, **isort** for import sorting. Line length 88.
 - **PEP 8:** `snake_case` for functions and variables, `PascalCase` for classes, `UPPER_CASE` for constants.
+- **Imports:** All imports at the **top of the file** only. Order: (1) standard library, (2) third-party, (3) project/local. No imports inside functions or after executable code. See `.cursor/rules/imports.md`.
 - Use **absolute imports** over relative imports.
 - Use **lowercase with underscores** for modules and files (e.g. `data_service.py`, `task_repository.py`).
 

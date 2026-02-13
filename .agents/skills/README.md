@@ -27,6 +27,7 @@ Skills in this folder are **aligned with this repository**. When using any skill
 
 | Skill | Aligns with |
 |-------|-------------|
+| **ai-solution-quality** | **AI output standards.** Optimal solutions only; no workarounds as the main fix. When a solution is suboptimal or no proper solution exists, warn the developer and ask for explicit acceptance before implementing. Use when implementing features, refactoring, or reviewing AI-generated code. See `.cursor/rules/ai-solution-quality.md` and `docs/AI_CODING_STANDARDS.md`. |
 | **fastapi-best-practices** | **Team standards for FastAPI.** Project structure, Depends(), async/AsyncSession, asyncio.to_thread for blocking, request/response models, error handling, middleware, DB/migrations. Use when adding or changing API routes, services, or dependencies. See `.cursor/rules/fastapi-python-best-practices.md` and `standards.md`. |
 | **cqrs-pattern** | **CQRS for API features.** Separate command (write) and query (read) services and repositories; endpoints inject the appropriate service. Use when adding or changing API features, new endpoints, or data access. See `.cursor/rules/cqrs.md` and `standards.md`. |
 | **python-anti-patterns** | error-handling, clean-code, fastapi-python-best-practices (no blocking in async; use `asyncio.to_thread` if blocking required). Use Pydantic **model_validate** (v2), not from_orm. |
@@ -34,4 +35,4 @@ Skills in this folder are **aligned with this repository**. When using any skill
 | **python-testing-patterns** | Test error paths and edge cases (error-handling, anti-patterns). In this repo, flow tests are in scripts/; pytest would go under backend/tests/ or per-service. |
 | **python-performance-optimization** | Async I/O in API path; blocking only via `asyncio.to_thread`. DB: use AsyncSession, pooling, batching; see database-postgres.md. CQRS allows scaling reads (replicas, caches) independently. After changes: run `make format` and `make lint`. |
 
-No skill should suggest: a different project layout, npm/frontend, SQLite as the app DB, or skipping format/lint. When in doubt, prefer `.cursor/rules` and this README.
+No skill should suggest: a different project layout, npm/frontend, SQLite as the app DB, skipping format/lint, workarounds as the primary solution, or implementing risky/suboptimal code without user acceptance. When in doubt, prefer `.cursor/rules` and this README.
